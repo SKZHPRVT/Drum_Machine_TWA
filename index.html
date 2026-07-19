@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover, maximum-scale=1.0, minimum-scale=1.0">
-    <title>Drum Machine Pro</title>
+    <title>Drum Machine Pro 16</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
@@ -23,7 +23,7 @@
             align-items: center;
             min-height: 100vh;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            padding: 8px;
+            padding: 6px;
             overflow: hidden;
             touch-action: manipulation;
         }
@@ -33,7 +33,7 @@
             max-width: 420px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
         }
 
         .header {
@@ -45,7 +45,7 @@
 
         .logo {
             color: #ff4757;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 900;
             letter-spacing: 3px;
             text-transform: uppercase;
@@ -54,20 +54,20 @@
         .bpm-compact {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             background: #1a1a1a;
-            border-radius: 20px;
-            padding: 6px 12px;
+            border-radius: 16px;
+            padding: 4px 10px;
         }
 
         .bpm-btn {
-            width: 28px;
-            height: 28px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             border: none;
             background: #2a2a2a;
             color: #aaa;
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
             display: flex;
             justify-content: center;
@@ -83,9 +83,9 @@
 
         .bpm-value {
             color: #fff;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 700;
-            min-width: 42px;
+            min-width: 36px;
             text-align: center;
             font-variant-numeric: tabular-nums;
             font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
@@ -93,7 +93,7 @@
 
         .bpm-label {
             color: #666;
-            font-size: 10px;
+            font-size: 9px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
@@ -101,35 +101,34 @@
         .pads-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 8px;
-            aspect-ratio: 2 / 1;
+            grid-template-rows: repeat(4, 1fr);
+            gap: 6px;
+            aspect-ratio: 1 / 1;
             touch-action: none;
         }
 
         .pad {
-            border-radius: 14px;
-            border: 2px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            border: 1.5px solid rgba(255, 255, 255, 0.08);
             cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-weight: 800;
-            font-size: 11px;
-            letter-spacing: 1px;
-            color: rgba(255, 255, 255, 0.9);
+            font-weight: 700;
+            font-size: 9px;
+            letter-spacing: 0.5px;
+            color: rgba(255, 255, 255, 0.85);
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
             transition: transform 0.04s ease-out, box-shadow 0.04s ease-out, border-color 0.15s;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.1);
         }
 
-        .pad:active,
         .pad.active {
-            transform: scale(0.94);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6), inset 0 2px 4px rgba(0,0,0,0.3);
-            border-color: rgba(255, 255, 255, 0.35);
+            transform: scale(0.92);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6), inset 0 2px 4px rgba(0,0,0,0.3);
+            border-color: rgba(255, 255, 255, 0.4);
         }
 
         .pad::after {
@@ -139,53 +138,63 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: radial-gradient(circle at 40% 35%, rgba(255,255,255,0.18) 0%, transparent 70%);
+            background: radial-gradient(circle at 40% 35%, rgba(255,255,255,0.15) 0%, transparent 70%);
             pointer-events: none;
-            border-radius: 12px;
+            border-radius: 8px;
         }
 
         .pad .pad-label {
             position: relative;
             z-index: 1;
             pointer-events: none;
+            text-align: center;
+            line-height: 1.2;
         }
 
-        /* Цвета пэдов */
-        .pad-kick  { background: linear-gradient(135deg, #c0392b, #e74c3c); }
-        .pad-snare { background: linear-gradient(135deg, #b8730a, #e67e22); }
-        .pad-hhcl  { background: linear-gradient(135deg, #b7950b, #f1c40f); }
-        .pad-hhop  { background: linear-gradient(135deg, #1e8449, #2ecc71); }
-        .pad-tomhi { background: linear-gradient(135deg, #1f618d, #3498db); }
-        .pad-tommid{ background: linear-gradient(135deg, #6c3483, #9b59b6); }
-        .pad-tomlo { background: linear-gradient(135deg, #0e6655, #1abc9c); }
-        .pad-clap  { background: linear-gradient(135deg, #ad1457, #e91e63); }
+        /* Цвета 16 пэдов */
+        .pad-0  { background: linear-gradient(135deg, #b71c1c, #f44336); }
+        .pad-1  { background: linear-gradient(135deg, #e65100, #ff9800); }
+        .pad-2  { background: linear-gradient(135deg, #f9a825, #fdd835); }
+        .pad-3  { background: linear-gradient(135deg, #33691e, #8bc34a); }
+        .pad-4  { background: linear-gradient(135deg, #0d47a1, #42a5f5); }
+        .pad-5  { background: linear-gradient(135deg, #4a148c, #ab47bc); }
+        .pad-6  { background: linear-gradient(135deg, #004d40, #26a69a); }
+        .pad-7  { background: linear-gradient(135deg, #880e4f, #ec407a); }
+        .pad-8  { background: linear-gradient(135deg, #bf360c, #ff7043); }
+        .pad-9  { background: linear-gradient(135deg, #e65100, #ffb74d); }
+        .pad-10 { background: linear-gradient(135deg, #827717, #d4e157); }
+        .pad-11 { background: linear-gradient(135deg, #1b5e20, #66bb6a); }
+        .pad-12 { background: linear-gradient(135deg, #01579b, #29b6f6); }
+        .pad-13 { background: linear-gradient(135deg, #6a1b9a, #ce93d8); }
+        .pad-14 { background: linear-gradient(135deg, #00695c, #4db6ac); }
+        .pad-15 { background: linear-gradient(135deg, #c2185b, #f06292); }
 
         .controls-row {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             align-items: center;
         }
 
         .vol-group {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             flex: 1;
             background: #1a1a1a;
-            border-radius: 20px;
-            padding: 6px 12px;
+            border-radius: 16px;
+            padding: 5px 10px;
         }
 
         .vol-icon {
             color: #666;
-            font-size: 14px;
+            font-size: 12px;
         }
 
         .volume-slider {
             flex: 1;
             -webkit-appearance: none;
             appearance: none;
-            height: 4px;
+            height: 3px;
             background: #333;
             border-radius: 2px;
             outline: none;
@@ -194,8 +203,8 @@
         .volume-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 22px;
-            height: 22px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
             background: #fff;
             cursor: pointer;
@@ -205,23 +214,24 @@
 
         .vol-num {
             color: #aaa;
-            font-size: 12px;
-            min-width: 28px;
+            font-size: 11px;
+            min-width: 24px;
             text-align: center;
             font-variant-numeric: tabular-nums;
             font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
         }
 
         .btn {
-            padding: 10px 14px;
-            border-radius: 20px;
+            padding: 8px 10px;
+            border-radius: 16px;
             border: none;
             font-weight: 700;
-            font-size: 12px;
+            font-size: 10px;
             letter-spacing: 1px;
             cursor: pointer;
             transition: all 0.15s;
             text-transform: uppercase;
+            white-space: nowrap;
         }
 
         .btn:active {
@@ -241,7 +251,7 @@
 
         @keyframes pulse-record {
             0%, 100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.5); }
-            50% { box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); }
+            50% { box-shadow: 0 0 0 8px rgba(255, 71, 87, 0); }
         }
 
         .btn-play {
@@ -271,24 +281,24 @@
             background: transparent;
             color: #666;
             border: 1px solid #333;
-            font-size: 10px;
-            padding: 8px 12px;
+            font-size: 9px;
+            padding: 7px 10px;
         }
 
         .status-bar {
             display: flex;
             justify-content: center;
-            gap: 16px;
-            font-size: 10px;
+            gap: 12px;
+            font-size: 9px;
             letter-spacing: 1px;
         }
 
         .status-dot {
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
             border-radius: 50%;
             display: inline-block;
-            margin-right: 4px;
+            margin-right: 3px;
         }
 
         .status-dot.ready { background: #2ecc71; }
@@ -305,7 +315,7 @@
     <div class="container">
         <!-- Хэдер -->
         <div class="header">
-            <span class="logo">🥁 BeatBox</span>
+            <span class="logo">🥁 BeatBox 16</span>
             <div class="bpm-compact">
                 <button class="bpm-btn" id="bpmDown">−</button>
                 <span class="bpm-value" id="bpmValue">120</span>
@@ -314,16 +324,24 @@
             </div>
         </div>
 
-        <!-- Пэды -->
+        <!-- Пэды 4x4 -->
         <div class="pads-grid" id="padsGrid">
-            <div class="pad pad-kick"  data-pad="0"><span class="pad-label">KICK</span></div>
-            <div class="pad pad-snare" data-pad="1"><span class="pad-label">SNARE</span></div>
-            <div class="pad pad-hhcl"  data-pad="2"><span class="pad-label">HH CL</span></div>
-            <div class="pad pad-hhop"  data-pad="3"><span class="pad-label">HH OP</span></div>
-            <div class="pad pad-tomhi" data-pad="4"><span class="pad-label">TOM HI</span></div>
-            <div class="pad pad-tommid"data-pad="5"><span class="pad-label">TOM MID</span></div>
-            <div class="pad pad-tomlo" data-pad="6"><span class="pad-label">TOM LO</span></div>
-            <div class="pad pad-clap"  data-pad="7"><span class="pad-label">CLAP</span></div>
+            <div class="pad pad-0"  data-pad="0"><span class="pad-label">KICK 1</span></div>
+            <div class="pad pad-1"  data-pad="1"><span class="pad-label">KICK 2</span></div>
+            <div class="pad pad-2"  data-pad="2"><span class="pad-label">SNARE 1</span></div>
+            <div class="pad pad-3"  data-pad="3"><span class="pad-label">SNARE 2</span></div>
+            <div class="pad pad-4"  data-pad="4"><span class="pad-label">HH CL</span></div>
+            <div class="pad pad-5"  data-pad="5"><span class="pad-label">HH OP</span></div>
+            <div class="pad pad-6"  data-pad="6"><span class="pad-label">TOM HI</span></div>
+            <div class="pad pad-7"  data-pad="7"><span class="pad-label">TOM MID</span></div>
+            <div class="pad pad-8"  data-pad="8"><span class="pad-label">TOM LO</span></div>
+            <div class="pad pad-9"  data-pad="9"><span class="pad-label">CLAP</span></div>
+            <div class="pad pad-10" data-pad="10"><span class="pad-label">RIM</span></div>
+            <div class="pad pad-11" data-pad="11"><span class="pad-label">SHAKER</span></div>
+            <div class="pad pad-12" data-pad="12"><span class="pad-label">CRASH</span></div>
+            <div class="pad pad-13" data-pad="13"><span class="pad-label">RIDE</span></div>
+            <div class="pad pad-14" data-pad="14"><span class="pad-label">PERC 1</span></div>
+            <div class="pad pad-15" data-pad="15"><span class="pad-label">PERC 2</span></div>
         </div>
 
         <!-- Управление -->
@@ -371,7 +389,7 @@
             let isPlaying = false;
             let playbackTimeout = null;
             let bpm = 120;
-            const activeTouches = new Map(); // touch.identifier -> padIndex
+            const activeTouches = new Map();
 
             // ============ DOM REFS ============
             const padsGrid = document.getElementById('padsGrid');
@@ -396,17 +414,25 @@
                 masterGain.gain.value = volume;
                 masterGain.connect(audioCtx.destination);
 
-                sampleBuffers[0] = generateKick();
-                sampleBuffers[1] = generateSnare();
-                sampleBuffers[2] = generateHHClosed();
-                sampleBuffers[3] = generateHHOpen();
-                sampleBuffers[4] = generateTom(300);
-                sampleBuffers[5] = generateTom(200);
-                sampleBuffers[6] = generateTom(120);
-                sampleBuffers[7] = generateClap();
+                sampleBuffers[0] = generateKick(0.4, 150, 30, 15);
+                sampleBuffers[1] = generateKick(0.35, 120, 25, 12); // Kick 2 — глубже
+                sampleBuffers[2] = generateSnare(0.3, 180, 20, 0.5, 0.5);
+                sampleBuffers[3] = generateSnare(0.25, 200, 25, 0.4, 0.6); // Snare 2 — ярче
+                sampleBuffers[4] = generateHH(0.08, 60, 0.5);
+                sampleBuffers[5] = generateHH(0.25, 10, 0.3);
+                sampleBuffers[6] = generateTom(300, 0.35, 12);
+                sampleBuffers[7] = generateTom(200, 0.35, 12);
+                sampleBuffers[8] = generateTom(120, 0.4, 10);
+                sampleBuffers[9] = generateClap(0.25);
+                sampleBuffers[10] = generateRim(0.15);
+                sampleBuffers[11] = generateShaker(0.2);
+                sampleBuffers[12] = generateCrash(0.8);
+                sampleBuffers[13] = generateRide(0.6);
+                sampleBuffers[14] = generatePerc(0.15, 800, 400);
+                sampleBuffers[15] = generatePerc(0.1, 1200, 600);
             }
 
-            function generateKick(length = 0.4) {
+            function generateKick(length, fStart, fEnd, decay) {
                 const sr = audioCtx.sampleRate;
                 const len = Math.floor(sr * length);
                 const buf = audioCtx.createBuffer(1, len, sr);
@@ -414,60 +440,45 @@
                 for (let i = 0; i < len; i++) {
                     const t = i / sr;
                     const p = i / len;
-                    const freq = 150 * Math.pow(0.2, p);
-                    const env = Math.exp(-t * 15);
+                    const freq = fStart * Math.pow(fEnd / fStart, p);
+                    const env = Math.exp(-t * decay);
                     const click = t < 0.005 ? (1 - t / 0.005) * 0.4 : 0;
                     d[i] = Math.sin(2 * Math.PI * freq * t) * env * 0.8 + click;
                 }
                 return buf;
             }
 
-            function generateSnare(length = 0.3) {
+            function generateSnare(length, freq, decay, toneMix, noiseMix) {
                 const sr = audioCtx.sampleRate;
                 const len = Math.floor(sr * length);
                 const buf = audioCtx.createBuffer(1, len, sr);
                 const d = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
                     const t = i / sr;
-                    const env = Math.exp(-t * 20);
-                    const tone = Math.sin(2 * Math.PI * 180 * t) * 0.45;
-                    const noise = (Math.random() * 2 - 1) * 0.55;
+                    const env = Math.exp(-t * decay);
+                    const tone = Math.sin(2 * Math.PI * freq * t) * toneMix;
+                    const noise = (Math.random() * 2 - 1) * noiseMix;
                     d[i] = (tone + noise) * env * 0.7;
                 }
                 return buf;
             }
 
-            function generateHHClosed(length = 0.08) {
+            function generateHH(length, decay, hpf) {
                 const sr = audioCtx.sampleRate;
                 const len = Math.floor(sr * length);
                 const buf = audioCtx.createBuffer(1, len, sr);
                 const d = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
                     const t = i / sr;
-                    const env = Math.exp(-t * 60);
+                    const env = Math.exp(-t * decay);
                     let s = (Math.random() * 2 - 1);
-                    if (i > 0) s = s - d[i - 1] * 0.5;
+                    if (i > 0) s = s - d[i - 1] * hpf;
                     d[i] = s * env * 0.4;
                 }
                 return buf;
             }
 
-            function generateHHOpen(length = 0.25) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * length);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const d = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    const env = Math.exp(-t * 10);
-                    let s = (Math.random() * 2 - 1);
-                    if (i > 0) s = s - d[i - 1] * 0.3;
-                    d[i] = s * env * 0.45;
-                }
-                return buf;
-            }
-
-            function generateTom(freqBase, length = 0.35) {
+            function generateTom(freqBase, length, decay) {
                 const sr = audioCtx.sampleRate;
                 const len = Math.floor(sr * length);
                 const buf = audioCtx.createBuffer(1, len, sr);
@@ -476,13 +487,13 @@
                     const t = i / sr;
                     const p = i / len;
                     const freq = freqBase * Math.pow(0.5, p);
-                    const env = Math.exp(-t * 12);
+                    const env = Math.exp(-t * decay);
                     d[i] = Math.sin(2 * Math.PI * freq * t) * env * 0.6;
                 }
                 return buf;
             }
 
-            function generateClap(length = 0.25) {
+            function generateClap(length) {
                 const sr = audioCtx.sampleRate;
                 const len = Math.floor(sr * length);
                 const buf = audioCtx.createBuffer(1, len, sr);
@@ -491,6 +502,80 @@
                     const t = i / sr;
                     const env = Math.exp(-t * 25) * 0.7 + (t > 0.02 && t < 0.04 ? 0.35 : 0) * Math.exp(-(t - 0.03) * 40);
                     d[i] = (Math.random() * 2 - 1) * env * 0.5;
+                }
+                return buf;
+            }
+
+            function generateRim(length) {
+                const sr = audioCtx.sampleRate;
+                const len = Math.floor(sr * length);
+                const buf = audioCtx.createBuffer(1, len, sr);
+                const d = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) {
+                    const t = i / sr;
+                    const env = Math.exp(-t * 40);
+                    const tone = Math.sin(2 * Math.PI * 1000 * t) * 0.3;
+                    const noise = (Math.random() * 2 - 1) * 0.7;
+                    d[i] = (tone + noise) * env * 0.5;
+                }
+                return buf;
+            }
+
+            function generateShaker(length) {
+                const sr = audioCtx.sampleRate;
+                const len = Math.floor(sr * length);
+                const buf = audioCtx.createBuffer(1, len, sr);
+                const d = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) {
+                    const t = i / sr;
+                    const env = Math.exp(-t * 15) * (0.7 + 0.3 * Math.sin(t * 80));
+                    d[i] = (Math.random() * 2 - 1) * env * 0.35;
+                }
+                return buf;
+            }
+
+            function generateCrash(length) {
+                const sr = audioCtx.sampleRate;
+                const len = Math.floor(sr * length);
+                const buf = audioCtx.createBuffer(1, len, sr);
+                const d = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) {
+                    const t = i / sr;
+                    const env = Math.exp(-t * 4);
+                    let s = (Math.random() * 2 - 1);
+                    if (i > 0) s = s - d[i - 1] * 0.2;
+                    d[i] = s * env * 0.5;
+                }
+                return buf;
+            }
+
+            function generateRide(length) {
+                const sr = audioCtx.sampleRate;
+                const len = Math.floor(sr * length);
+                const buf = audioCtx.createBuffer(1, len, sr);
+                const d = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) {
+                    const t = i / sr;
+                    const env = Math.exp(-t * 6);
+                    const tone = Math.sin(2 * Math.PI * 800 * t) * 0.4;
+                    let noise = (Math.random() * 2 - 1);
+                    if (i > 0) noise = noise - d[i - 1] * 0.3;
+                    d[i] = (tone + noise * 0.6) * env * 0.45;
+                }
+                return buf;
+            }
+
+            function generatePerc(length, fStart, fEnd) {
+                const sr = audioCtx.sampleRate;
+                const len = Math.floor(sr * length);
+                const buf = audioCtx.createBuffer(1, len, sr);
+                const d = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) {
+                    const t = i / sr;
+                    const p = i / len;
+                    const freq = fStart * Math.pow(fEnd / fStart, p);
+                    const env = Math.exp(-t * 30);
+                    d[i] = Math.sin(2 * Math.PI * freq * t) * env * 0.5;
                 }
                 return buf;
             }
@@ -505,7 +590,6 @@
                 source.connect(masterGain);
                 source.start(time || 0);
 
-                // Запись
                 if (isRecording) {
                     const eventTime = (time || audioCtx.currentTime) - recordingStartTime;
                     recordedEvents.push({ padIndex, time: eventTime });
@@ -523,17 +607,14 @@
             }
 
             function activatePad(padIndex) {
-                const pad = allPads[padIndex];
-                pad.classList.add('active');
+                allPads[padIndex].classList.add('active');
             }
 
             function deactivatePad(padIndex) {
-                // Проверяем, нет ли других пальцев на этом пэде
                 for (const [id, idx] of activeTouches) {
-                    if (idx === padIndex) return; // ещё активен
+                    if (idx === padIndex) return;
                 }
-                const pad = allPads[padIndex];
-                pad.classList.remove('active');
+                allPads[padIndex].classList.remove('active');
             }
 
             padsGrid.addEventListener('touchstart', (e) => {
@@ -595,7 +676,6 @@
                 if (audioCtx.state === 'suspended') audioCtx.resume();
 
                 if (!isRecording) {
-                    // Начать запись
                     isRecording = true;
                     recordedEvents = [];
                     recordingStartTime = audioCtx.currentTime;
@@ -606,7 +686,6 @@
                     setStatus('recording');
                     if (isPlaying) stopPlayback();
                 } else {
-                    // Остановить запись
                     isRecording = false;
                     recordBtn.classList.remove('recording');
                     recordBtn.textContent = '⏺ REC';
@@ -617,7 +696,7 @@
                 }
             });
 
-            // ============ PLAYBACK CONTROLS ============
+            // ============ PLAYBACK ============
             function startPlayback() {
                 if (recordedEvents.length === 0) return;
 
@@ -629,14 +708,10 @@
                 setStatus('playing');
 
                 const now = audioCtx.currentTime;
-                playbackStartTime = now;
-
-                // Планируем все события
                 recordedEvents.forEach(event => {
                     playPad(event.padIndex, now + event.time);
                 });
 
-                // Автостоп
                 const lastTime = Math.max(...recordedEvents.map(e => e.time));
                 const duration = (lastTime + 0.5) * 1000;
                 playbackTimeout = setTimeout(() => {
@@ -687,17 +762,6 @@
                 bpmValue.textContent = bpm;
             }
 
-            bpmDown.addEventListener('click', () => {
-                bpm = Math.max(40, bpm - 1);
-                updateBPM();
-            });
-
-            bpmUp.addEventListener('click', () => {
-                bpm = Math.min(240, bpm + 1);
-                updateBPM();
-            });
-
-            // Долгое нажатие для быстрого изменения BPM
             let bpmInterval = null;
             function startBPMChange(delta) {
                 bpm = Math.max(40, Math.min(240, bpm + delta));
@@ -726,12 +790,11 @@
             updateBPM();
             setStatus('ready');
 
-            // iOS audio hack
             document.addEventListener('touchstart', () => {
                 if (!audioCtx) initAudio();
             }, { once: true });
 
-            console.log('🥁 BeatBox Pro ready! Мультитач активен.');
+            console.log('🥁 BeatBox 16 ready! 16 пэдов, мультитач.');
         })();
     </script>
 </body>
