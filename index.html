@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Drum Machine</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 10px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        h2 {
+            color: #e0e0e0;
+            text-align: center;
+            font-size: 20px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .pads-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 10px;
+            aspect-ratio: 2 / 1;
+        }
+
+        .pad {
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 14px;
+            color: white;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+            transition: transform 0.05s ease, box-shadow 0.05s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .pad:active {
+            transform: scale(0.93);
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+        }
+
+        .pad::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.25) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        /* Цвета пэдов */
+        .pad:nth-child(1) { background: #e74c3c; } /* Kick */
+        .pad:nth-child(2) { background: #e67e22; } /* Snare */
+        .pad:nth-child(3) { background: #f1c40f; } /* Hi-hat closed */
+        .pad:nth-child(4) { background: #2ecc71; } /* Hi-hat open */
+        .pad:nth-child(5) { background: #3498db; } /* Tom high */
+        .pad:nth-child(6) { background: #9b59b6; } /* Tom mid */
+        .pad:nth-child(7) { background: #1abc9c; } /* Tom low */
+        .pad:nth-child(8) { background: #e91e63; } /* Clap */
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .volume-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+            border: 2px solid #555;
+        }
+
+        .volume-label {
+            color: #aaa;
+            font-size: 14px;
+            min-width: 45px;
+            text-align: center;
+        }
+
+        .record-btn {
+            padding: 10px 16px;
+            border-radius: 25px;
+            border: none;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            background: #444;
+            color: white;
+            transition: background 0.2s;
+        }
+
+        .record-btn.recording {
+            background: #e74c3c;
+            animation: pulse 0.8s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .bpm-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .bpm-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid #555;
+            background: #222;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .bpm-display {
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .playback-btns {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .playback-btns button {
+            padding: 12px 28px;
+            border-radius: 25px;
+            border: none;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            background: #2ecc71;
+            color: white;
+            letter-spacing: 1px;
+        }
+
+        .playback-btns button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .playback-btns .stop-btn {
+            background: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🥁 DRUM MACHINE</h2>
+        <div class="pads-grid" id="padsGrid">
+            <div class="pad" data-pad="0">KICK</div>
+            <div class="pad" data-pad="1">SNARE</div>
+            <div class="pad" data-pad="2">HH CL</div>
+            <div class="pad" data-pad="3">HH OP</div>
+            <div class="pad" data-pad="4">TOM HI</div>
+            <div class="pad" data-pad="5">TOM MID</div>
+            <div class="pad" data-pad="6">TOM LO</div>
+            <div class="pad" data-pad="7">CLAP</div>
+        </div>
+        <div class="controls">
+            <span class="volume-label">VOL</span>
+            <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="80">
+            <button class="record-btn" id="recordBtn">⏺ REC</button>
+        </div>
+        <div class="bpm-control">
+            <button class="bpm-btn" id="bpmDown">−</button>
+            <span class="bpm-display" id="bpmDisplay">120 BPM</span>
+            <button class="bpm-btn" id="bpmUp">+</button>
+        </div>
+        <div class="playback-btns">
+            <button id="playBtn" disabled>▶ PLAY</button>
+            <button class="stop-btn" id="stopBtn" disabled>■ STOP</button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // --- Telegram Web App инициализация ---
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+
+            // Устанавливаем цвета темы Telegram, если доступны
+            if (tg.themeParams.bg_color) {
+                document.body.style.backgroundColor = tg.themeParams.bg_color;
+            }
+
+            // --- Audio Context ---
+            let audioCtx = null;
+            const sampleBuffers = [];
+            const SAMPLE_NAMES = ['kick', 'snare', 'hh_closed', 'hh_open', 'tom_hi', 'tom_mid', 'tom_lo', 'clap'];
+            let masterGain = null;
+            let volume = 0.8;
+
+            // --- Состояние записи/воспроизведения ---
+            let isRecording = false;
+            let recordedEvents = []; // { padIndex, time }
+            let recordingStartTime = 0;
+            let playbackInterval = null;
+            let playbackStartTime = 0;
+            let isPlaying = false;
+            let bpm = 120;
+
+            // --- DOM элементы ---
+            const pads = document.querySelectorAll('.pad');
+            const recordBtn = document.getElementById('recordBtn');
+            const playBtn = document.getElementById('playBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const volumeSlider = document.getElementById('volumeSlider');
+            const bpmDisplay = document.getElementById('bpmDisplay');
+            const bpmDown = document.getElementById('bpmDown');
+            const bpmUp = document.getElementById('bpmUp');
+
+            // --- Генерация синтезированных семплов (Web Audio API, без внешних файлов) ---
+            function generateKick(length = 0.4) {
+                const sampleRate = audioCtx.sampleRate;
+                const numSamples = Math.floor(sampleRate * length);
+                const buffer = audioCtx.createBuffer(1, numSamples, sampleRate);
+                const data = buffer.getChannelData(0);
+
+                const freqStart = 150;
+                const freqEnd = 30;
+                for (let i = 0; i < numSamples; i++) {
+                    const t = i / sampleRate;
+                    const progress = i / numSamples;
+                    const freq = freqStart * Math.pow(freqEnd / freqStart, progress);
+                    // Синусоида с экспоненциальным затуханием + небольшой клик в начале
+                    const envelope = Math.exp(-t * 15);
+                    const click = (t < 0.005) ? (1 - t / 0.005) * 0.5 : 0;
+                    data[i] = Math.sin(2 * Math.PI * freq * t) * envelope * 0.8 + click;
+                }
+                return buffer;
+            }
+
+            function generateSnare(length = 0.3) {
+                const sampleRate = audioCtx.sampleRate;
+                const numSamples = Math.floor(sampleRate * length);
+                const buffer = audioCtx.createBuffer(1, numSamples, sampleRate);
+                const data = buffer.getChannelData(0);
+
+                for (let i = 0; i < numSamples; i++) {
+                    const t = i / sampleRate;
+                    const envelope = Math.exp(-t * 20);
+                    // Тональная часть (150 Гц) + шум
+                    const tone = Math.sin(2 * Math.PI * 180 * t) * 0.5;
+                    const noise = (Math.random() * 2 - 1) * 0.6;
+                    data[i] = (tone + noise) * envelope * 0.7;
+                }
+                return buffer;
+            }
+
+            function generateHHClosed(length = 0.08) {
+                const sampleRate = audioCtx.sampleRate;
+                const numSamples = Math.floor(sampleRate * length);
+                const buffer = audioCtx.createBuffer(1, numSamples, sampleRate);
+                const data = buffer.getChannelData(0);
+
+                for (let i = 0; i < numSamples; i++) {
+                    const t = i / sampleRate;
+                    const envelope = Math.exp(-t * 60);
+                    // Высокочастотный шум
+                    let sample = (Math.random() * 2 - 1);
+                    // Простой high-pass эффект: вычитаем соседний семпл
+                    if (i > 0) {
+                        sample = sample - data[i-1] * 0.5;
+                    }
+                    data[i] = sample * envelope * 0.4;
+                }
+                return buffer;
+            }
+
+            function generateHHOpen(length = 0.25) {
+                const sampleRate = audioCtx.sampleRate;
+                const numSamples = Math.floor(sampleRate * length);
+                const buffer = audioCtx.createBuffer(1, numSamples, sampleRate);
+                const data = buffer.getChannelData(0);
+
+                for (let i = 0; i < numSamples; i++) {
+                    const t = i / sampleRate;
+                    const envelope = Math.exp(-t * 10);
+                    let sample = (Math.random() * 2 - 1);
+                    if (i > 0) {
+                        sample = sample - data[i-1] * 0.3;
+                    }
+                    data[i] = sample * envelope * 0.5;
+                }
+                return buffer;
+            }
+
+            function generateTom(freqBase, length = 0.35) {
+                const sampleRate = audioCtx.sampleRate;
+                const numSamples = Math.floor(sampleRate * length);
+                const buffer = audioCtx.createBuffer(1, numSamples, sampleRate);
+                const data = buffer.getChannelData(0);
+
+                const freqStart = freqBase;
+                const freqEnd = freqBase * 0.5;
+                for (let i = 0; i < numSamples; i++) {
+                    const t = i / sampleRate;
+                    const progress = i / numSamples;
+                    const freq = freqStart * Math.pow(freqEnd / freqStart, progress);
+                    const envelope = Math.exp(-t * 12);
+                    data[i] = Math.sin(2 * Math.PI * freq * t) * envelope * 0.6;
+                }
+                return buffer;
+            }
+
+            function generateClap(length = 0.25) {
+                const sampleRate = audioCtx.sampleRate;
+                const numSamples = Math.floor(sampleRate * length);
+                const buffer = audioCtx.createBuffer(1, numSamples, sampleRate);
+                const data = buffer.getChannelData(0);
+
+                for (let i = 0; i < numSamples; i++) {
+                    const t = i / sampleRate;
+                    // Два пика для реалистичности хлопка
+                    const envelope = Math.exp(-t * 25) * 0.7 + (t > 0.02 && t < 0.04 ? 0.4 : 0) * Math.exp(-(t-0.03) * 40);
+                    const noise = (Math.random() * 2 - 1);
+                    data[i] = noise * envelope * 0.5;
+                }
+                return buffer;
+            }
+
+            // --- Инициализация аудио ---
+            function initAudio() {
+                if (audioCtx) return;
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = audioCtx.createGain();
+                masterGain.gain.value = volume;
+                masterGain.connect(audioCtx.destination);
+
+                sampleBuffers[0] = generateKick();
+                sampleBuffers[1] = generateSnare();
+                sampleBuffers[2] = generateHHClosed();
+                sampleBuffers[3] = generateHHOpen();
+                sampleBuffers[4] = generateTom(300);  // Tom High
+                sampleBuffers[5] = generateTom(200);  // Tom Mid
+                sampleBuffers[6] = generateTom(120);  // Tom Low
+                sampleBuffers[7] = generateClap();
+            }
+
+            // --- Воспроизведение звука ---
+            function playPad(padIndex) {
+                if (!audioCtx) initAudio();
+
+                // Возобновляем контекст если он в состоянии suspended (нужно для iOS/Safari)
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const source = audioCtx.createBufferSource();
+                source.buffer = sampleBuffers[padIndex];
+                source.connect(masterGain);
+                source.start();
+
+                // Запись, если активна
+                if (isRecording) {
+                    const eventTime = audioCtx.currentTime - recordingStartTime;
+                    recordedEvents.push({ padIndex, time: eventTime });
+                }
+            }
+
+            // --- Обработчики пэдов ---
+            pads.forEach(pad => {
+                pad.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    const padIndex = parseInt(pad.dataset.pad);
+                    playPad(padIndex);
+
+                    // Визуальный фидбек
+                    pad.style.transform = 'scale(0.93)';
+                });
+
+                pad.addEventListener('pointerup', () => {
+                    pad.style.transform = 'scale(1)';
+                });
+
+                pad.addEventListener('pointerleave', () => {
+                    pad.style.transform = 'scale(1)';
+                });
+
+                // Предотвращаем долгое нажатие на мобильных
+                pad.addEventListener('contextmenu', (e) => e.preventDefault());
+            });
+
+            // --- Управление записью ---
+            recordBtn.addEventListener('click', () => {
+                if (!audioCtx) initAudio();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                if (!isRecording) {
+                    // Начать запись
+                    isRecording = true;
+                    recordedEvents = [];
+                    recordingStartTime = audioCtx.currentTime;
+                    recordBtn.classList.add('recording');
+                    recordBtn.textContent = '⏺ REC ●';
+                    playBtn.disabled = false;
+                    stopBtn.disabled = true;
+                    if (isPlaying) stopPlayback();
+                } else {
+                    // Остановить запись
+                    isRecording = false;
+                    recordBtn.classList.remove('recording');
+                    recordBtn.textContent = '⏺ REC';
+                    if (recordedEvents.length > 0) {
+                        playBtn.disabled = false;
+                    }
+                }
+            });
+
+            // --- Воспроизведение ---
+            function startPlayback() {
+                if (recordedEvents.length === 0) return;
+
+                isPlaying = true;
+                playBtn.disabled = true;
+                stopBtn.disabled = false;
+                recordBtn.disabled = true;
+
+                playbackStartTime = audioCtx.currentTime;
+
+                // Планируем все события на основе их времени
+                recordedEvents.forEach(event => {
+                    const delay = event.time;
+                    const source = audioCtx.createBufferSource();
+                    source.buffer = sampleBuffers[event.padIndex];
+                    source.connect(masterGain);
+                    source.start(playbackStartTime + delay);
+                });
+
+                // Находим время окончания последнего события
+                const lastEventTime = Math.max(...recordedEvents.map(e => e.time));
+                const totalDuration = lastEventTime + 0.5; // + небольшая пауза
+
+                // Устанавливаем таймер для автоматической остановки
+                playbackInterval = setTimeout(() => {
+                    stopPlayback();
+                }, totalDuration * 1000);
+            }
+
+            function stopPlayback() {
+                isPlaying = false;
+                playBtn.disabled = false;
+                stopBtn.disabled = true;
+                recordBtn.disabled = false;
+                if (playbackInterval) {
+                    clearTimeout(playbackInterval);
+                    playbackInterval = null;
+                }
+            }
+
+            playBtn.addEventListener('click', () => {
+                if (!audioCtx) initAudio();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                startPlayback();
+            });
+
+            stopBtn.addEventListener('click', () => {
+                stopPlayback();
+            });
+
+            // --- Громкость ---
+            volumeSlider.addEventListener('input', () => {
+                volume = parseInt(volumeSlider.value) / 100;
+                if (masterGain) {
+                    masterGain.gain.setValueAtTime(volume, audioCtx.currentTime);
+                }
+            });
+
+            // --- BPM ---
+            function updateBPMDisplay() {
+                bpmDisplay.textContent = bpm + ' BPM';
+            }
+
+            bpmDown.addEventListener('click', () => {
+                bpm = Math.max(40, bpm - 5);
+                updateBPMDisplay();
+            });
+
+            bpmUp.addEventListener('click', () => {
+                bpm = Math.min(240, bpm + 5);
+                updateBPMDisplay();
+            });
+
+            // --- Инициализация ---
+            updateBPMDisplay();
+
+            // Уведомление для пользователей iOS о необходимости взаимодействия
+            document.addEventListener('click', () => {
+                if (!audioCtx) initAudio();
+            }, { once: true });
+
+            console.log('🥁 Drum Machine ready!');
+            console.log('Нажмите на пэды для игры. REC - запись паттерна, PLAY - воспроизведение.');
+        })();
+    </script>
+</body>
+</html>
