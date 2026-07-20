@@ -55,6 +55,7 @@
         .header-btns {
             display: flex;
             gap: 6px;
+            align-items: center;
         }
 
         .icon-btn {
@@ -119,6 +120,36 @@
             letter-spacing: 1px;
         }
 
+        /* Режимы */
+        .mode-tabs {
+            display: flex;
+            gap: 4px;
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 3px;
+        }
+
+        .mode-tab {
+            flex: 1;
+            padding: 6px 8px;
+            border-radius: 13px;
+            border: none;
+            background: transparent;
+            color: #666;
+            font-size: 9px;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.15s;
+        }
+
+        .mode-tab.active-tab {
+            background: #333;
+            color: #fff;
+        }
+
+        /* Пэды */
         .pads-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -158,6 +189,12 @@
             animation: edit-pulse 1.5s infinite;
         }
 
+        .pad.sample-select-mode {
+            border-color: rgba(0, 180, 255, 0.7);
+            border-style: dashed;
+            animation: select-pulse 1s infinite;
+        }
+
         .pad.drag-over {
             border-color: #fff !important;
             border-style: solid !important;
@@ -169,9 +206,34 @@
             transform: scale(0.95);
         }
 
+        .pad.custom-sample {
+            border-width: 2px;
+            border-color: rgba(0, 200, 255, 0.5);
+        }
+
+        .pad .custom-indicator {
+            position: absolute;
+            bottom: 3px;
+            left: 5px;
+            font-size: 6px;
+            color: rgba(0, 200, 255, 0.8);
+            z-index: 1;
+            pointer-events: none;
+            display: none;
+        }
+
+        .pad.custom-sample .custom-indicator {
+            display: block;
+        }
+
         @keyframes edit-pulse {
             0%, 100% { border-color: rgba(255, 215, 0, 0.4); }
             50% { border-color: rgba(255, 215, 0, 0.9); }
+        }
+
+        @keyframes select-pulse {
+            0%, 100% { border-color: rgba(0, 180, 255, 0.4); }
+            50% { border-color: rgba(0, 180, 255, 0.9); }
         }
 
         .pad::after {
@@ -221,6 +283,94 @@
         .pad-13 { background: linear-gradient(135deg, #6a1b9a, #ce93d8); }
         .pad-14 { background: linear-gradient(135deg, #00695c, #4db6ac); }
         .pad-15 { background: linear-gradient(135deg, #c2185b, #f06292); }
+
+        .pad-custom {
+            background: linear-gradient(135deg, #1a1a2e, #16213e) !important;
+            border-color: rgba(0, 200, 255, 0.4) !important;
+        }
+
+        /* Список семплов */
+        .sample-list-container {
+            display: none;
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .sample-list-container.visible {
+            display: block;
+        }
+
+        .sample-search {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #0d0d0d;
+            color: #fff;
+            font-size: 12px;
+            margin-bottom: 6px;
+            outline: none;
+        }
+
+        .sample-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .sample-item {
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #0d0d0d;
+            color: #aaa;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .sample-item:active, .sample-item.selected {
+            background: #007bff;
+            border-color: #007bff;
+            color: #fff;
+        }
+
+        .sample-item.custom {
+            border-color: #00c8ff;
+            color: #00c8ff;
+        }
+
+        .sample-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .sample-action-btn {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #0d0d0d;
+            color: #aaa;
+            font-size: 10px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .sample-action-btn.upload-btn {
+            border-color: #00c8ff;
+            color: #00c8ff;
+        }
+
+        .sample-action-btn.assign-btn {
+            border-color: #2ecc71;
+            color: #2ecc71;
+        }
 
         /* Пресеты */
         .preset-bar {
@@ -389,10 +539,15 @@
         .status-dot.recording { background: #ff4757; animation: pulse-record 0.7s infinite; }
         .status-dot.playing { background: #f1c40f; }
         .status-dot.editing { background: #ffd700; }
+        .status-dot.selecting { background: #00b4ff; }
 
         .status-text {
             color: #555;
             text-transform: uppercase;
+        }
+
+        .hidden-file-input {
+            display: none;
         }
     </style>
 </head>
@@ -402,6 +557,7 @@
         <div class="header">
             <span class="logo">🥁 BeatBox Pro</span>
             <div class="header-btns">
+                <button class="icon-btn" id="sampleBtn" title="Select sample">♫</button>
                 <button class="icon-btn" id="editBtn" title="Edit layout">✎</button>
                 <div class="bpm-compact">
                     <button class="bpm-btn" id="bpmDown">−</button>
@@ -421,24 +577,37 @@
             <button class="preset-btn preset-save" id="savePresetBtn">+</button>
         </div>
 
+        <!-- Список семплов -->
+        <div class="sample-list-container" id="sampleListContainer">
+            <input type="text" class="sample-search" id="sampleSearch" placeholder="🔍 Поиск семплов...">
+            <div class="sample-list" id="sampleList">
+                <!-- Заполняется динамически -->
+            </div>
+            <div class="sample-actions">
+                <button class="sample-action-btn upload-btn" id="uploadSampleBtn">📁 ЗАГРУЗИТЬ</button>
+                <button class="sample-action-btn assign-btn" id="assignSampleBtn">✓ НАЗНАЧИТЬ</button>
+            </div>
+            <input type="file" class="hidden-file-input" id="fileInput" accept="audio/*" multiple>
+        </div>
+
         <!-- Пэды -->
         <div class="pads-grid" id="padsGrid">
-            <div class="pad pad-0" data-pad="0"><span class="pad-label">KICK 1</span><span class="pad-number">1</span></div>
-            <div class="pad pad-1" data-pad="1"><span class="pad-label">KICK 2</span><span class="pad-number">2</span></div>
-            <div class="pad pad-2" data-pad="2"><span class="pad-label">SNARE 1</span><span class="pad-number">3</span></div>
-            <div class="pad pad-3" data-pad="3"><span class="pad-label">SNARE 2</span><span class="pad-number">4</span></div>
-            <div class="pad pad-4" data-pad="4"><span class="pad-label">HH CL</span><span class="pad-number">5</span></div>
-            <div class="pad pad-5" data-pad="5"><span class="pad-label">HH OP</span><span class="pad-number">6</span></div>
-            <div class="pad pad-6" data-pad="6"><span class="pad-label">TOM HI</span><span class="pad-number">7</span></div>
-            <div class="pad pad-7" data-pad="7"><span class="pad-label">TOM MID</span><span class="pad-number">8</span></div>
-            <div class="pad pad-8" data-pad="8"><span class="pad-label">TOM LO</span><span class="pad-number">9</span></div>
-            <div class="pad pad-9" data-pad="9"><span class="pad-label">CLAP</span><span class="pad-number">10</span></div>
-            <div class="pad pad-10" data-pad="10"><span class="pad-label">RIM</span><span class="pad-number">11</span></div>
-            <div class="pad pad-11" data-pad="11"><span class="pad-label">SHAKER</span><span class="pad-number">12</span></div>
-            <div class="pad pad-12" data-pad="12"><span class="pad-label">CRASH</span><span class="pad-number">13</span></div>
-            <div class="pad pad-13" data-pad="13"><span class="pad-label">RIDE</span><span class="pad-number">14</span></div>
-            <div class="pad pad-14" data-pad="14"><span class="pad-label">PERC 1</span><span class="pad-number">15</span></div>
-            <div class="pad pad-15" data-pad="15"><span class="pad-label">PERC 2</span><span class="pad-number">16</span></div>
+            <div class="pad pad-0" data-pad="0"><span class="pad-label">KICK 1</span><span class="pad-number">1</span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-1" data-pad="1"><span class="pad-label">KICK 2</span><span class="pad-number">2</span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-2" data-pad="2"><span class="pad-label">SNARE 1</span><span class="pad-number">3</span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-3" data-pad="3"><span class="pad-label">SNARE 2</span><span class="pad-number">4</span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-4" data-pad="4"><span class="pad-label">HH CL</span><span class="pad-number">5</span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-5" data-pad="5"><span class="pad-label">HH OP</span><span class="pad-number">6</span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-6" data-pad="6"><span class="pad-label">TOM HI</span><span class="pad-number">7</span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-7" data-pad="7"><span class="pad-label">TOM MID</span><span class="pad-number">8</span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-8" data-pad="8"><span class="pad-label">TOM LO</span><span class="pad-number">9</span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-9" data-pad="9"><span class="pad-label">CLAP</span><span class="pad-number">10</span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-10" data-pad="10"><span class="pad-label">RIM</span><span class="pad-number">11</span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-11" data-pad="11"><span class="pad-label">SHAKER</span><span class="pad-number">12</span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-12" data-pad="12"><span class="pad-label">CRASH</span><span class="pad-number">13</span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-13" data-pad="13"><span class="pad-label">RIDE</span><span class="pad-number">14</span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-14" data-pad="14"><span class="pad-label">PERC 1</span><span class="pad-number">15</span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-15" data-pad="15"><span class="pad-label">PERC 2</span><span class="pad-number">16</span><span class="custom-indicator">◆</span></div>
         </div>
 
         <!-- Управление -->
@@ -475,7 +644,7 @@
             // ============ AUDIO ENGINE ============
             let audioCtx = null;
             let masterGain = null;
-            const sampleBuffers = [];
+            let sampleBuffers = []; // Может расширяться при загрузке файлов
             let volume = 0.8;
 
             // ============ STATE ============
@@ -487,25 +656,40 @@
             let bpm = 120;
             const activeTouches = new Map();
             let editMode = false;
+            let sampleSelectMode = false;
             let currentPreset = 0;
             let dragPadIndex = null;
+            let selectedSampleIndex = null;
 
-            // Массив названий семплов
-            const sampleNames = [
-                'KICK 1', 'KICK 2', 'SNARE 1', 'SNARE 2',
-                'HH CL', 'HH OP', 'TOM HI', 'TOM MID',
-                'TOM LO', 'CLAP', 'RIM', 'SHAKER',
-                'CRASH', 'RIDE', 'PERC 1', 'PERC 2'
+            // Список семплов
+            let sampleList = [
+                { name: 'KICK 1', type: 'builtin', index: 0 },
+                { name: 'KICK 2', type: 'builtin', index: 1 },
+                { name: 'SNARE 1', type: 'builtin', index: 2 },
+                { name: 'SNARE 2', type: 'builtin', index: 3 },
+                { name: 'HH CL', type: 'builtin', index: 4 },
+                { name: 'HH OP', type: 'builtin', index: 5 },
+                { name: 'TOM HI', type: 'builtin', index: 6 },
+                { name: 'TOM MID', type: 'builtin', index: 7 },
+                { name: 'TOM LO', type: 'builtin', index: 8 },
+                { name: 'CLAP', type: 'builtin', index: 9 },
+                { name: 'RIM', type: 'builtin', index: 10 },
+                { name: 'SHAKER', type: 'builtin', index: 11 },
+                { name: 'CRASH', type: 'builtin', index: 12 },
+                { name: 'RIDE', type: 'builtin', index: 13 },
+                { name: 'PERC 1', type: 'builtin', index: 14 },
+                { name: 'PERC 2', type: 'builtin', index: 15 }
             ];
 
-            // Пресеты: каждый пресет — массив из 16 индексов семплов
             const defaultLayout = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
             let presets = [];
             let currentLayout = [...defaultLayout];
 
+            // Для custom семплов: храним WAV данные в IndexedDB (или просто в памяти пока)
+            let customSamples = []; // { name, buffer }
+
             // ============ DOM REFS ============
             const padsGrid = document.getElementById('padsGrid');
-            let allPads = document.querySelectorAll('.pad');
             const recordBtn = document.getElementById('recordBtn');
             const playBtn = document.getElementById('playBtn');
             const stopBtn = document.getElementById('stopBtn');
@@ -518,37 +702,32 @@
             const statusDot = document.getElementById('statusDot');
             const statusLabel = document.getElementById('statusLabel');
             const editBtn = document.getElementById('editBtn');
+            const sampleBtn = document.getElementById('sampleBtn');
+            const sampleListContainer = document.getElementById('sampleListContainer');
+            const sampleListEl = document.getElementById('sampleList');
+            const sampleSearch = document.getElementById('sampleSearch');
+            const uploadSampleBtn = document.getElementById('uploadSampleBtn');
+            const assignSampleBtn = document.getElementById('assignSampleBtn');
+            const fileInput = document.getElementById('fileInput');
             const presetBar = document.getElementById('presetBar');
             const savePresetBtn = document.getElementById('savePresetBtn');
 
             // ============ PRESETS ============
             function loadPresets() {
                 try {
-                    const saved = localStorage.getItem('beatbox_presets');
+                    const saved = localStorage.getItem('beatbox_presets_v2');
                     if (saved) {
                         presets = JSON.parse(saved);
                     } else {
-                        presets = [
-                            [...defaultLayout],
-                            [...defaultLayout],
-                            [...defaultLayout],
-                            [...defaultLayout]
-                        ];
+                        presets = [[...defaultLayout],[...defaultLayout],[...defaultLayout],[...defaultLayout]];
                     }
                 } catch(e) {
-                    presets = [
-                        [...defaultLayout],
-                        [...defaultLayout],
-                        [...defaultLayout],
-                        [...defaultLayout]
-                    ];
+                    presets = [[...defaultLayout],[...defaultLayout],[...defaultLayout],[...defaultLayout]];
                 }
             }
 
             function savePresets() {
-                try {
-                    localStorage.setItem('beatbox_presets', JSON.stringify(presets));
-                } catch(e) {}
+                try { localStorage.setItem('beatbox_presets_v2', JSON.stringify(presets)); } catch(e) {}
             }
 
             function loadPreset(index) {
@@ -564,58 +743,156 @@
             }
 
             function updatePresetButtons() {
-                const btns = document.querySelectorAll('.preset-btn:not(.preset-save)');
-                btns.forEach(btn => {
-                    const idx = parseInt(btn.dataset.preset);
-                    btn.classList.toggle('active-preset', idx === currentPreset);
+                document.querySelectorAll('.preset-btn:not(.preset-save)').forEach(btn => {
+                    btn.classList.toggle('active-preset', parseInt(btn.dataset.preset) === currentPreset);
                 });
             }
 
             // ============ LAYOUT ============
+            function getPadClass(sampleIndex) {
+                if (sampleIndex >= 16) return 'pad-custom';
+                return `pad-${sampleIndex}`;
+            }
+
+            function getPadLabel(sampleIndex) {
+                if (sampleIndex >= 16) {
+                    const customIdx = sampleIndex - 16;
+                    return customSamples[customIdx] ? customSamples[customIdx].name : 'CUSTOM';
+                }
+                return sampleList[sampleIndex] ? sampleList[sampleIndex].name : '???';
+            }
+
             function updatePadsDisplay() {
                 const pads = document.querySelectorAll('.pad');
                 pads.forEach(pad => {
                     const position = parseInt(pad.dataset.pad);
                     const sampleIndex = currentLayout[position];
-                    // Обновляем класс цвета
-                    pad.className = pad.className.replace(/pad-\d+/g, '');
-                    pad.classList.add('pad', `pad-${sampleIndex}`);
-                    // Обновляем текст
-                    const label = pad.querySelector('.pad-label');
-                    if (label) label.textContent = sampleNames[sampleIndex];
-                    // Обновляем номер
-                    const number = pad.querySelector('.pad-number');
-                    if (number) number.textContent = position + 1;
 
-                    if (editMode) {
-                        pad.classList.add('edit-mode');
-                    } else {
-                        pad.classList.remove('edit-mode');
-                    }
+                    // Класс цвета
+                    pad.className = '';
+                    pad.classList.add('pad', getPadClass(sampleIndex));
+                    if (sampleIndex >= 16) pad.classList.add('custom-sample');
+
+                    // Режимы
+                    if (editMode) pad.classList.add('edit-mode');
+                    if (sampleSelectMode) pad.classList.add('sample-select-mode');
+
+                    // Текст
+                    pad.querySelector('.pad-label').textContent = getPadLabel(sampleIndex);
+                    pad.querySelector('.pad-number').textContent = position + 1;
                 });
-                allPads = document.querySelectorAll('.pad');
             }
 
             function swapPads(posA, posB) {
-                const temp = currentLayout[posA];
-                currentLayout[posA] = currentLayout[posB];
-                currentLayout[posB] = temp;
+                [currentLayout[posA], currentLayout[posB]] = [currentLayout[posB], currentLayout[posA]];
                 updatePadsDisplay();
                 saveCurrentPreset();
             }
 
-            function toggleEditMode() {
-                editMode = !editMode;
-                editBtn.classList.toggle('active', editMode);
-                updatePadsDisplay();
-                if (editMode) {
-                    setStatus('editing', 'EDIT MODE');
-                } else {
-                    setStatus('ready', 'READY');
+            function assignSampleToSelectedPad(sampleIndex) {
+                // Находим выбранный пэд (если есть) или используем первый
+                const targetPad = document.querySelector('.pad.selected-pad');
+                if (targetPad) {
+                    const padIndex = parseInt(targetPad.dataset.pad);
+                    currentLayout[padIndex] = sampleIndex;
+                    targetPad.classList.remove('selected-pad');
                 }
+                updatePadsDisplay();
+                saveCurrentPreset();
             }
 
-            // ============ DRAG AND DROP (для редактора) ============
+            // ============ SAMPLE LIST UI ============
+            function renderSampleList(filter = '') {
+                const f = filter.toLowerCase();
+                sampleListEl.innerHTML = sampleList
+                    .filter(s => s.name.toLowerCase().includes(f))
+                    .map(s => {
+                        const isCustom = s.type === 'custom';
+                        const cls = isCustom ? 'sample-item custom' : 'sample-item';
+                        const sel = s.index === selectedSampleIndex ? ' selected' : '';
+                        return `<div class="${cls}${sel}" data-sample="${s.index}">${s.name}</div>`;
+                    }).join('');
+
+                // Обработчики кликов
+                sampleListEl.querySelectorAll('.sample-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        selectedSampleIndex = parseInt(item.dataset.sample);
+                        renderSampleList(sampleSearch.value);
+                    });
+                });
+            }
+
+            function toggleSampleList() {
+                sampleSelectMode = !sampleSelectMode;
+                sampleListContainer.classList.toggle('visible', sampleSelectMode);
+                sampleBtn.classList.toggle('active', sampleSelectMode);
+
+                if (sampleSelectMode) {
+                    editMode = false;
+                    editBtn.classList.remove('active');
+                    renderSampleList();
+                    setStatus('selecting', 'SELECT SAMPLE');
+                } else {
+                    selectedSampleIndex = null;
+                    document.querySelectorAll('.pad.selected-pad').forEach(p => p.classList.remove('selected-pad'));
+                    setStatus('ready', 'READY');
+                }
+                updatePadsDisplay();
+            }
+
+            // ============ FILE UPLOAD ============
+            uploadSampleBtn.addEventListener('click', () => fileInput.click());
+
+            fileInput.addEventListener('change', async (e) => {
+                const files = Array.from(e.target.files);
+                if (files.length === 0) return;
+
+                if (!audioCtx) initAudio();
+
+                for (const file of files) {
+                    try {
+                        const arrayBuffer = await file.arrayBuffer();
+                        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+                        const customIndex = 16 + customSamples.length;
+                        const name = file.name.replace(/\.[^/.]+$/, '').substring(0, 12).toUpperCase();
+
+                        customSamples.push({ name, buffer: audioBuffer });
+                        sampleList.push({ name, type: 'custom', index: customIndex });
+
+                        // Если это первый пэд в sample select mode — сразу назначаем
+                        if (sampleSelectMode) {
+                            selectedSampleIndex = customIndex;
+                        }
+                    } catch(err) {
+                        console.error('Failed to load sample:', file.name, err);
+                        alert('Ошибка загрузки: ' + file.name + '\nПоддерживаются WAV, MP3, OGG');
+                    }
+                }
+
+                renderSampleList(sampleSearch.value);
+                updatePadsDisplay();
+                fileInput.value = '';
+            });
+
+            // Назначить выбранный семпл на пэд
+            assignSampleBtn.addEventListener('click', () => {
+                if (selectedSampleIndex === null) return;
+                const targetPad = document.querySelector('.pad.selected-pad');
+                if (targetPad) {
+                    const padIndex = parseInt(targetPad.dataset.pad);
+                    currentLayout[padIndex] = selectedSampleIndex;
+                    targetPad.classList.remove('selected-pad');
+                    updatePadsDisplay();
+                    saveCurrentPreset();
+                    selectedSampleIndex = null;
+                    renderSampleList(sampleSearch.value);
+                }
+            });
+
+            sampleSearch.addEventListener('input', () => renderSampleList(sampleSearch.value));
+
+            // ============ TOUCH HANDLING ============
             function getPadAtPoint(x, y) {
                 const el = document.elementFromPoint(x, y);
                 if (el) {
@@ -625,29 +902,32 @@
                 return null;
             }
 
-            // На мобильных: долгое нажатие в edit mode = начало перетаскивания
-            let longPressTimer = null;
-            let longPressActive = false;
-
             padsGrid.addEventListener('touchstart', (e) => {
-                if (editMode) {
+                if (editMode || sampleSelectMode) {
                     e.preventDefault();
                     const touch = e.changedTouches[0];
                     const pad = getPadAtPoint(touch.clientX, touch.clientY);
-                    if (pad) {
+
+                    if (sampleSelectMode && pad) {
+                        // Выбор пэда для назначения семпла
+                        document.querySelectorAll('.pad.selected-pad').forEach(p => p.classList.remove('selected-pad'));
+                        pad.classList.add('selected-pad');
+                        return;
+                    }
+
+                    if (editMode && pad) {
                         dragPadIndex = parseInt(pad.dataset.pad);
-                        // Долгое нажатие для захвата
                         longPressTimer = setTimeout(() => {
                             longPressActive = true;
                             pad.classList.add('dragging');
-                            // Тактильный отклик
                             if (navigator.vibrate) navigator.vibrate(10);
                         }, 400);
+                        return;
                     }
                     return;
                 }
 
-                // Обычный режим — игра
+                // Обычный режим
                 e.preventDefault();
                 if (!audioCtx) initAudio();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -665,53 +945,40 @@
                 }
             }, { passive: false });
 
+            let longPressTimer = null;
+            let longPressActive = false;
+
             padsGrid.addEventListener('touchmove', (e) => {
                 if (editMode && longPressActive && dragPadIndex !== null) {
                     e.preventDefault();
                     const touch = e.changedTouches[0];
                     const pad = getPadAtPoint(touch.clientX, touch.clientY);
-                    
-                    // Убираем drag-over со всех
                     document.querySelectorAll('.pad.drag-over').forEach(p => p.classList.remove('drag-over'));
-                    
-                    if (pad) {
-                        const targetIndex = parseInt(pad.dataset.pad);
-                        if (targetIndex !== dragPadIndex) {
-                            pad.classList.add('drag-over');
-                        }
+                    if (pad && parseInt(pad.dataset.pad) !== dragPadIndex) {
+                        pad.classList.add('drag-over');
                     }
                 }
             }, { passive: false });
 
             padsGrid.addEventListener('touchend', (e) => {
-                if (editMode) {
+                if (editMode || sampleSelectMode) {
                     if (longPressTimer) clearTimeout(longPressTimer);
-                    
                     if (longPressActive && dragPadIndex !== null) {
                         const touch = e.changedTouches[0];
                         const pad = getPadAtPoint(touch.clientX, touch.clientY);
-                        
-                        // Сбрасываем dragging
-                        const dragPad = document.querySelector(`.pad[data-pad="${dragPadIndex}"]`);
-                        if (dragPad) dragPad.classList.remove('dragging');
-                        
-                        // Сбрасываем drag-over
-                        document.querySelectorAll('.pad.drag-over').forEach(p => p.classList.remove('drag-over'));
-                        
+                        document.querySelectorAll('.pad.dragging, .pad.drag-over').forEach(p => {
+                            p.classList.remove('dragging', 'drag-over');
+                        });
                         if (pad) {
                             const targetIndex = parseInt(pad.dataset.pad);
-                            if (targetIndex !== dragPadIndex) {
-                                swapPads(dragPadIndex, targetIndex);
-                            }
+                            if (targetIndex !== dragPadIndex) swapPads(dragPadIndex, targetIndex);
                         }
                     }
-                    
                     longPressActive = false;
                     dragPadIndex = null;
                     return;
                 }
 
-                // Обычный режим — отпускание пэда
                 for (const touch of e.changedTouches) {
                     if (activeTouches.has(touch.identifier)) {
                         const padIndex = activeTouches.get(touch.identifier);
@@ -721,20 +988,17 @@
                 }
             });
 
-            document.addEventListener('touchcancel', (e) => {
+            document.addEventListener('touchcancel', () => {
                 if (longPressTimer) clearTimeout(longPressTimer);
                 longPressActive = false;
                 dragPadIndex = null;
-                document.querySelectorAll('.pad.dragging').forEach(p => p.classList.remove('dragging'));
-                document.querySelectorAll('.pad.drag-over').forEach(p => p.classList.remove('drag-over'));
-
-                for (const touch of e.changedTouches) {
-                    if (activeTouches.has(touch.identifier)) {
-                        const padIndex = activeTouches.get(touch.identifier);
-                        activeTouches.delete(touch.identifier);
-                        deactivatePad(padIndex);
-                    }
+                document.querySelectorAll('.pad.dragging, .pad.drag-over').forEach(p => {
+                    p.classList.remove('dragging', 'drag-over');
+                });
+                for (const [id, padIndex] of activeTouches) {
+                    deactivatePad(padIndex);
                 }
+                activeTouches.clear();
             });
 
             function deactivatePad(padIndex) {
@@ -747,7 +1011,7 @@
 
             document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-            // ============ AUDIO GENERATION ============
+            // ============ AUDIO ============
             function initAudio() {
                 if (audioCtx) return;
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -755,156 +1019,148 @@
                 masterGain.gain.value = volume;
                 masterGain.connect(audioCtx.destination);
 
-                sampleBuffers[0] = generateKick(0.4, 150, 30, 15);
-                sampleBuffers[1] = generateKick(0.35, 120, 25, 12);
-                sampleBuffers[2] = generateSnare(0.3, 180, 20, 0.5, 0.5);
-                sampleBuffers[3] = generateSnare(0.25, 200, 25, 0.4, 0.6);
-                sampleBuffers[4] = generateHH(0.08, 60, 0.5);
-                sampleBuffers[5] = generateHH(0.25, 10, 0.3);
-                sampleBuffers[6] = generateTom(300, 0.35, 12);
-                sampleBuffers[7] = generateTom(200, 0.35, 12);
-                sampleBuffers[8] = generateTom(120, 0.4, 10);
-                sampleBuffers[9] = generateClap(0.25);
-                sampleBuffers[10] = generateRim(0.15);
-                sampleBuffers[11] = generateShaker(0.2);
-                sampleBuffers[12] = generateCrash(0.8);
-                sampleBuffers[13] = generateRide(0.6);
-                sampleBuffers[14] = generatePerc(0.15, 800, 400);
-                sampleBuffers[15] = generatePerc(0.1, 1200, 600);
+                // Генерируем 16 встроенных семплов
+                sampleBuffers = [];
+                sampleBuffers[0] = genKick(0.4, 150, 30, 15);
+                sampleBuffers[1] = genKick(0.35, 120, 25, 12);
+                sampleBuffers[2] = genSnare(0.3, 180, 20, 0.5, 0.5);
+                sampleBuffers[3] = genSnare(0.25, 200, 25, 0.4, 0.6);
+                sampleBuffers[4] = genHH(0.08, 60, 0.5);
+                sampleBuffers[5] = genHH(0.25, 10, 0.3);
+                sampleBuffers[6] = genTom(300, 0.35, 12);
+                sampleBuffers[7] = genTom(200, 0.35, 12);
+                sampleBuffers[8] = genTom(120, 0.4, 10);
+                sampleBuffers[9] = genClap(0.25);
+                sampleBuffers[10] = genRim(0.15);
+                sampleBuffers[11] = genShaker(0.2);
+                sampleBuffers[12] = genCrash(0.8);
+                sampleBuffers[13] = genRide(0.6);
+                sampleBuffers[14] = genPerc(0.15, 800, 400);
+                sampleBuffers[15] = genPerc(0.1, 1200, 600);
             }
 
-            function generateKick(l, fS, fE, d) {
-                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
+            function genKick(l, fS, fE, d) {
+                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
-                    const t = i / sr, p = i / len;
-                    const freq = fS * Math.pow(fE / fS, p);
-                    const env = Math.exp(-t * d);
-                    data[i] = Math.sin(2 * Math.PI * freq * t) * env * 0.8 + (t < 0.005 ? (1 - t / 0.005) * 0.4 : 0);
+                    const t = i / sr;
+                    data[i] = Math.sin(2 * Math.PI * fS * Math.pow(fE / fS, i / len) * t) * Math.exp(-t * d) * 0.8 + (t < 0.005 ? (1 - t / 0.005) * 0.4 : 0);
                 }
                 return buf;
             }
-
-            function generateSnare(l, f, d, tM, nM) {
-                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
+            function genSnare(l, f, d, tM, nM) {
+                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
-                    const t = i / sr, env = Math.exp(-t * d);
-                    data[i] = (Math.sin(2 * Math.PI * f * t) * tM + (Math.random() * 2 - 1) * nM) * env * 0.7;
+                    const t = i / sr;
+                    data[i] = (Math.sin(2 * Math.PI * f * t) * tM + (Math.random() * 2 - 1) * nM) * Math.exp(-t * d) * 0.7;
                 }
                 return buf;
             }
-
-            function generateHH(l, d, h) {
-                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
+            function genHH(l, d, h) {
+                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
-                    const t = i / sr, env = Math.exp(-t * d);
                     let s = (Math.random() * 2 - 1);
-                    if (i > 0) s = s - data[i - 1] * h;
-                    data[i] = s * env * 0.4;
+                    if (i > 0) s -= data[i - 1] * h;
+                    data[i] = s * Math.exp(-i / sr * d) * 0.4;
                 }
                 return buf;
             }
-
-            function generateTom(fB, l, d) {
-                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
+            function genTom(fB, l, d) {
+                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
-                    const t = i / sr, p = i / len;
-                    data[i] = Math.sin(2 * Math.PI * fB * Math.pow(0.5, p) * t) * Math.exp(-t * d) * 0.6;
+                    data[i] = Math.sin(2 * Math.PI * fB * Math.pow(0.5, i / len) * i / sr) * Math.exp(-i / sr * d) * 0.6;
                 }
                 return buf;
             }
-
-            function generateClap(l) {
-                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
+            function genClap(l) {
+                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
                     const t = i / sr;
-                    const env = Math.exp(-t * 25) * 0.7 + (t > 0.02 && t < 0.04 ? 0.35 : 0) * Math.exp(-(t - 0.03) * 40);
-                    data[i] = (Math.random() * 2 - 1) * env * 0.5;
+                    data[i] = (Math.random() * 2 - 1) * (Math.exp(-t * 25) * 0.7 + (t > 0.02 && t < 0.04 ? 0.35 : 0) * Math.exp(-(t - 0.03) * 40)) * 0.5;
                 }
                 return buf;
             }
-
-            function generateRim(l) {
-                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
+            function genRim(l) {
+                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    data[i] = (Math.sin(2 * Math.PI * 1000 * t) * 0.3 + (Math.random() * 2 - 1) * 0.7) * Math.exp(-t * 40) * 0.5;
+                    data[i] = (Math.sin(2 * Math.PI * 1000 * i / sr) * 0.3 + (Math.random() * 2 - 1) * 0.7) * Math.exp(-i / sr * 40) * 0.5;
                 }
                 return buf;
             }
-
-            function generateShaker(l) {
-                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
+            function genShaker(l) {
+                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    data[i] = (Math.random() * 2 - 1) * Math.exp(-t * 15) * (0.7 + 0.3 * Math.sin(t * 80)) * 0.35;
+                    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / sr * 15) * (0.7 + 0.3 * Math.sin(i / sr * 80)) * 0.35;
                 }
                 return buf;
             }
-
-            function generateCrash(l) {
-                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
+            function genCrash(l) {
+                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
-                    const t = i / sr; let s = (Math.random() * 2 - 1);
-                    if (i > 0) s = s - data[i - 1] * 0.2;
-                    data[i] = s * Math.exp(-t * 4) * 0.5;
+                    let s = (Math.random() * 2 - 1);
+                    if (i > 0) s -= data[i - 1] * 0.2;
+                    data[i] = s * Math.exp(-i / sr * 4) * 0.5;
                 }
                 return buf;
             }
-
-            function generateRide(l) {
-                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
+            function genRide(l) {
+                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
-                    const t = i / sr; let s = (Math.random() * 2 - 1);
-                    if (i > 0) s = s - data[i - 1] * 0.3;
-                    data[i] = (Math.sin(2 * Math.PI * 800 * t) * 0.4 + s * 0.6) * Math.exp(-t * 6) * 0.45;
+                    let s = (Math.random() * 2 - 1);
+                    if (i > 0) s -= data[i - 1] * 0.3;
+                    data[i] = (Math.sin(2 * Math.PI * 800 * i / sr) * 0.4 + s * 0.6) * Math.exp(-i / sr * 6) * 0.45;
                 }
                 return buf;
             }
-
-            function generatePerc(l, fS, fE) {
-                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
+            function genPerc(l, fS, fE) {
+                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
-                    const t = i / sr, p = i / len;
-                    data[i] = Math.sin(2 * Math.PI * fS * Math.pow(fE / fS, p) * t) * Math.exp(-t * 30) * 0.5;
+                    data[i] = Math.sin(2 * Math.PI * fS * Math.pow(fE / fS, i / len) * i / sr) * Math.exp(-i / sr * 30) * 0.5;
                 }
                 return buf;
             }
 
-            // ============ PLAYBACK ============
             function playPad(sampleIndex, time) {
                 if (!audioCtx) initAudio();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
 
+                let buffer;
+                if (sampleIndex >= 16) {
+                    const customIdx = sampleIndex - 16;
+                    buffer = customSamples[customIdx] ? customSamples[customIdx].buffer : null;
+                } else {
+                    buffer = sampleBuffers[sampleIndex];
+                }
+
+                if (!buffer) return;
+
                 const source = audioCtx.createBufferSource();
-                source.buffer = sampleBuffers[sampleIndex];
+                source.buffer = buffer;
                 source.connect(masterGain);
                 source.start(time || 0);
 
                 if (isRecording) {
-                    const eventTime = (time || audioCtx.currentTime) - recordingStartTime;
-                    recordedEvents.push({ sampleIndex, time: eventTime });
+                    recordedEvents.push({ sampleIndex, time: (time || audioCtx.currentTime) - recordingStartTime });
                 }
             }
 
             // ============ RECORDING ============
             function setStatus(mode, label) {
-                statusDot.className = 'status-dot';
-                statusDot.classList.add(mode);
+                statusDot.className = 'status-dot ' + mode;
                 statusLabel.textContent = label || mode.toUpperCase();
             }
 
             recordBtn.addEventListener('click', () => {
-                if (editMode) return;
+                if (editMode || sampleSelectMode) return;
                 if (!audioCtx) initAudio();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
 
@@ -927,7 +1183,6 @@
                 }
             });
 
-            // ============ PLAYBACK ============
             function startPlayback() {
                 if (recordedEvents.length === 0) return;
                 isPlaying = true;
@@ -938,12 +1193,9 @@
                 setStatus('playing');
 
                 const now = audioCtx.currentTime;
-                recordedEvents.forEach(event => {
-                    playPad(event.sampleIndex, now + event.time);
-                });
-
-                const lastTime = Math.max(...recordedEvents.map(e => e.time));
-                playbackTimeout = setTimeout(() => stopPlayback(), (lastTime + 0.5) * 1000);
+                recordedEvents.forEach(e => playPad(e.sampleIndex, now + e.time));
+                const last = Math.max(...recordedEvents.map(e => e.time));
+                playbackTimeout = setTimeout(() => stopPlayback(), (last + 0.5) * 1000);
             }
 
             function stopPlayback() {
@@ -957,14 +1209,12 @@
             }
 
             playBtn.addEventListener('click', () => {
-                if (editMode) return;
+                if (editMode || sampleSelectMode) return;
                 if (!audioCtx) initAudio();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
                 startPlayback();
             });
-
             stopBtn.addEventListener('click', stopPlayback);
-
             clearBtn.addEventListener('click', () => {
                 recordedEvents = [];
                 playBtn.disabled = true;
@@ -973,14 +1223,13 @@
                 setStatus('ready');
             });
 
-            // ============ VOLUME ============
+            // ============ VOLUME & BPM ============
             volumeSlider.addEventListener('input', () => {
                 volume = parseInt(volumeSlider.value) / 100;
                 volNum.textContent = volumeSlider.value;
                 if (masterGain) masterGain.gain.setValueAtTime(volume, audioCtx.currentTime);
             });
 
-            // ============ BPM ============
             function updateBPM() { bpmValue.textContent = bpm; }
             let bpmInterval = null;
             function startBPMChange(d) {
@@ -995,24 +1244,28 @@
             bpmUp.addEventListener('pointerup', stopBPMChange);
             bpmUp.addEventListener('pointerleave', stopBPMChange);
 
-            // ============ EDIT MODE ============
-            editBtn.addEventListener('click', toggleEditMode);
+            // ============ BUTTONS ============
+            editBtn.addEventListener('click', () => {
+                if (sampleSelectMode) toggleSampleList();
+                editMode = !editMode;
+                editBtn.classList.toggle('active', editMode);
+                if (editMode) setStatus('editing', 'EDIT MODE');
+                else setStatus('ready', 'READY');
+                updatePadsDisplay();
+            });
 
-            // ============ PRESET BUTTONS ============
+            sampleBtn.addEventListener('click', toggleSampleList);
+
             presetBar.addEventListener('click', (e) => {
                 const btn = e.target.closest('.preset-btn');
                 if (!btn) return;
-
                 if (btn === savePresetBtn) {
-                    // Сохранить текущий пресет
                     saveCurrentPreset();
                     btn.style.color = '#2ecc71';
-                    setTimeout(() => { btn.style.color = '#555'; }, 500);
+                    setTimeout(() => btn.style.color = '#555', 500);
                     return;
                 }
-
-                const presetIndex = parseInt(btn.dataset.preset);
-                loadPreset(presetIndex);
+                loadPreset(parseInt(btn.dataset.preset));
                 recordedEvents = [];
                 playBtn.disabled = true;
                 stopBtn.disabled = true;
@@ -1036,7 +1289,7 @@
                 if (!audioCtx) initAudio();
             }, { once: true });
 
-            console.log('🥁 BeatBox Pro ready! Edit mode, presets, drag & drop.');
+            console.log('🥁 BeatBox Pro ready! Custom samples enabled.');
         })();
     </script>
 </body>
