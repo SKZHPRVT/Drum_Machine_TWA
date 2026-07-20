@@ -120,36 +120,6 @@
             letter-spacing: 1px;
         }
 
-        /* Режимы */
-        .mode-tabs {
-            display: flex;
-            gap: 4px;
-            background: #1a1a1a;
-            border-radius: 16px;
-            padding: 3px;
-        }
-
-        .mode-tab {
-            flex: 1;
-            padding: 6px 8px;
-            border-radius: 13px;
-            border: none;
-            background: transparent;
-            color: #666;
-            font-size: 9px;
-            font-weight: 700;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.15s;
-        }
-
-        .mode-tab.active-tab {
-            background: #333;
-            color: #fff;
-        }
-
-        /* Пэды */
         .pads-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -266,7 +236,6 @@
             pointer-events: none;
         }
 
-        /* Цвета */
         .pad-0  { background: linear-gradient(135deg, #b71c1c, #f44336); }
         .pad-1  { background: linear-gradient(135deg, #e65100, #ff9800); }
         .pad-2  { background: linear-gradient(135deg, #f9a825, #fdd835); }
@@ -289,7 +258,6 @@
             border-color: rgba(0, 200, 255, 0.4) !important;
         }
 
-        /* Список семплов */
         .sample-list-container {
             display: none;
             background: #1a1a1a;
@@ -372,7 +340,11 @@
             color: #2ecc71;
         }
 
-        /* Пресеты */
+        .sample-action-btn.delete-btn {
+            border-color: #ff4757;
+            color: #ff4757;
+        }
+
         .preset-bar {
             display: flex;
             gap: 4px;
@@ -452,8 +424,6 @@
             font-size: 11px;
             min-width: 24px;
             text-align: center;
-            font-variant-numeric: tabular-nums;
-            font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
         }
 
         .btn {
@@ -553,9 +523,8 @@
 </head>
 <body>
     <div class="container">
-        <!-- Хэдер -->
         <div class="header">
-            <span class="logo">🥁 Drum Machine</span>
+            <span class="logo">🥁 BeatBox Pro</span>
             <div class="header-btns">
                 <button class="icon-btn" id="sampleBtn" title="Select sample">♫</button>
                 <button class="icon-btn" id="editBtn" title="Edit layout">✎</button>
@@ -568,7 +537,6 @@
             </div>
         </div>
 
-        <!-- Пресеты -->
         <div class="preset-bar" id="presetBar">
             <button class="preset-btn active-preset" data-preset="0">A</button>
             <button class="preset-btn" data-preset="1">B</button>
@@ -577,20 +545,17 @@
             <button class="preset-btn preset-save" id="savePresetBtn">+</button>
         </div>
 
-        <!-- Список семплов -->
         <div class="sample-list-container" id="sampleListContainer">
             <input type="text" class="sample-search" id="sampleSearch" placeholder="🔍 Поиск семплов...">
-            <div class="sample-list" id="sampleList">
-                <!-- Заполняется динамически -->
-            </div>
+            <div class="sample-list" id="sampleList"></div>
             <div class="sample-actions">
                 <button class="sample-action-btn upload-btn" id="uploadSampleBtn">📁 ЗАГРУЗИТЬ</button>
                 <button class="sample-action-btn assign-btn" id="assignSampleBtn">✓ НАЗНАЧИТЬ</button>
+                <button class="sample-action-btn delete-btn" id="deleteSampleBtn">🗑 УДАЛИТЬ</button>
             </div>
             <input type="file" class="hidden-file-input" id="fileInput" accept="audio/*" multiple>
         </div>
 
-        <!-- Пэды -->
         <div class="pads-grid" id="padsGrid">
             <div class="pad pad-0" data-pad="0"><span class="pad-label">KICK 1</span><span class="pad-number">1</span><span class="custom-indicator">◆</span></div>
             <div class="pad pad-1" data-pad="1"><span class="pad-label">KICK 2</span><span class="pad-number">2</span><span class="custom-indicator">◆</span></div>
@@ -610,7 +575,6 @@
             <div class="pad pad-15" data-pad="15"><span class="pad-label">PERC 2</span><span class="pad-number">16</span><span class="custom-indicator">◆</span></div>
         </div>
 
-        <!-- Управление -->
         <div class="controls-row">
             <div class="vol-group">
                 <span class="vol-icon">🔈</span>
@@ -641,10 +605,134 @@
             tg.ready();
             tg.expand();
 
+            // ============ INDEXEDDB ============
+            const DB_NAME = 'BeatBoxDB';
+            const DB_VERSION = 1;
+            let db = null;
+
+            function openDB() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(DB_NAME, DB_VERSION);
+                    request.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains('samples')) {
+                            db.createObjectStore('samples', { keyPath: 'id', autoIncrement: true });
+                        }
+                        if (!db.objectStoreNames.contains('layouts')) {
+                            db.createObjectStore('layouts', { keyPath: 'presetIndex' });
+                        }
+                    };
+                    request.onsuccess = (e) => {
+                        db = e.target.result;
+                        resolve(db);
+                    };
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            }
+
+            // --- Операции с семплами ---
+            function saveSampleToDB(name, audioBuffer) {
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('samples', 'readwrite');
+                    const store = tx.objectStore('samples');
+                    const channels = [];
+                    for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
+                        channels.push(Array.from(audioBuffer.getChannelData(ch)));
+                    }
+                    const data = {
+                        name: name,
+                        sampleRate: audioBuffer.sampleRate,
+                        length: audioBuffer.length,
+                        numberOfChannels: audioBuffer.numberOfChannels,
+                        channels: channels
+                    };
+                    const request = store.add(data);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            }
+
+            function loadAllSamplesFromDB() {
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('samples', 'readonly');
+                    const store = tx.objectStore('samples');
+                    const request = store.getAll();
+                    request.onsuccess = () => {
+                        const results = request.result;
+                        const buffers = [];
+                        for (const item of results) {
+                            if (!audioCtx) initAudio();
+                            const buf = audioCtx.createBuffer(
+                                item.numberOfChannels,
+                                item.length,
+                                item.sampleRate
+                            );
+                            for (let ch = 0; ch < item.numberOfChannels; ch++) {
+                                buf.copyToChannel(new Float32Array(item.channels[ch]), ch);
+                            }
+                            buffers.push({
+                                id: item.id,
+                                name: item.name,
+                                buffer: buf
+                            });
+                        }
+                        resolve(buffers);
+                    };
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            }
+
+            function deleteSampleFromDB(id) {
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('samples', 'readwrite');
+                    const store = tx.objectStore('samples');
+                    const request = store.delete(id);
+                    request.onsuccess = () => resolve();
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            }
+
+            // --- Операции с лейаутами ---
+            function saveLayoutToDB(presetIndex, layout) {
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('layouts', 'readwrite');
+                    const store = tx.objectStore('layouts');
+                    store.put({ presetIndex, layout });
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = (e) => reject(e.target.error);
+                });
+            }
+
+            function loadLayoutFromDB(presetIndex) {
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('layouts', 'readonly');
+                    const store = tx.objectStore('layouts');
+                    const request = store.get(presetIndex);
+                    request.onsuccess = () => resolve(request.result ? request.result.layout : null);
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            }
+
+            function loadAllLayoutsFromDB() {
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('layouts', 'readonly');
+                    const store = tx.objectStore('layouts');
+                    const request = store.getAll();
+                    request.onsuccess = () => {
+                        const layouts = {};
+                        for (const item of request.result) {
+                            layouts[item.presetIndex] = item.layout;
+                        }
+                        resolve(layouts);
+                    };
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            }
+
             // ============ AUDIO ENGINE ============
             let audioCtx = null;
             let masterGain = null;
-            let sampleBuffers = []; // Может расширяться при загрузке файлов
+            let sampleBuffers = [];
             let volume = 0.8;
 
             // ============ STATE ============
@@ -661,32 +749,33 @@
             let dragPadIndex = null;
             let selectedSampleIndex = null;
 
-            // Список семплов
-            let sampleList = [
-                { name: 'KICK 1', type: 'builtin', index: 0 },
-                { name: 'KICK 2', type: 'builtin', index: 1 },
-                { name: 'SNARE 1', type: 'builtin', index: 2 },
-                { name: 'SNARE 2', type: 'builtin', index: 3 },
-                { name: 'HH CL', type: 'builtin', index: 4 },
-                { name: 'HH OP', type: 'builtin', index: 5 },
-                { name: 'TOM HI', type: 'builtin', index: 6 },
-                { name: 'TOM MID', type: 'builtin', index: 7 },
-                { name: 'TOM LO', type: 'builtin', index: 8 },
-                { name: 'CLAP', type: 'builtin', index: 9 },
-                { name: 'RIM', type: 'builtin', index: 10 },
-                { name: 'SHAKER', type: 'builtin', index: 11 },
-                { name: 'CRASH', type: 'builtin', index: 12 },
-                { name: 'RIDE', type: 'builtin', index: 13 },
-                { name: 'PERC 1', type: 'builtin', index: 14 },
-                { name: 'PERC 2', type: 'builtin', index: 15 }
+            const builtinNames = [
+                'KICK 1', 'KICK 2', 'SNARE 1', 'SNARE 2',
+                'HH CL', 'HH OP', 'TOM HI', 'TOM MID',
+                'TOM LO', 'CLAP', 'RIM', 'SHAKER',
+                'CRASH', 'RIDE', 'PERC 1', 'PERC 2'
             ];
 
             const defaultLayout = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
-            let presets = [];
+            let presets = [[...defaultLayout],[...defaultLayout],[...defaultLayout],[...defaultLayout]];
             let currentLayout = [...defaultLayout];
+            let customSamples = [];
+            let sampleList = [];
 
-            // Для custom семплов: храним WAV данные в IndexedDB (или просто в памяти пока)
-            let customSamples = []; // { name, buffer }
+            function buildSampleList() {
+                sampleList = [];
+                for (let i = 0; i < 16; i++) {
+                    sampleList.push({ name: builtinNames[i], type: 'builtin', index: i });
+                }
+                for (let i = 0; i < customSamples.length; i++) {
+                    sampleList.push({
+                        name: customSamples[i].name,
+                        type: 'custom',
+                        index: 16 + i,
+                        dbId: customSamples[i].id
+                    });
+                }
+            }
 
             // ============ DOM REFS ============
             const padsGrid = document.getElementById('padsGrid');
@@ -708,76 +797,62 @@
             const sampleSearch = document.getElementById('sampleSearch');
             const uploadSampleBtn = document.getElementById('uploadSampleBtn');
             const assignSampleBtn = document.getElementById('assignSampleBtn');
+            const deleteSampleBtn = document.getElementById('deleteSampleBtn');
             const fileInput = document.getElementById('fileInput');
             const presetBar = document.getElementById('presetBar');
             const savePresetBtn = document.getElementById('savePresetBtn');
 
             // ============ PRESETS ============
-            function loadPresets() {
-                try {
-                    const saved = localStorage.getItem('beatbox_presets_v2');
-                    if (saved) {
-                        presets = JSON.parse(saved);
-                    } else {
-                        presets = [[...defaultLayout],[...defaultLayout],[...defaultLayout],[...defaultLayout]];
-                    }
-                } catch(e) {
-                    presets = [[...defaultLayout],[...defaultLayout],[...defaultLayout],[...defaultLayout]];
-                }
-            }
-
-            function savePresets() {
-                try { localStorage.setItem('beatbox_presets_v2', JSON.stringify(presets)); } catch(e) {}
-            }
-
-            function loadPreset(index) {
-                currentPreset = index;
-                currentLayout = [...presets[index]];
-                updatePadsDisplay();
-                updatePresetButtons();
-            }
-
-            function saveCurrentPreset() {
-                presets[currentPreset] = [...currentLayout];
-                savePresets();
-            }
-
             function updatePresetButtons() {
                 document.querySelectorAll('.preset-btn:not(.preset-save)').forEach(btn => {
                     btn.classList.toggle('active-preset', parseInt(btn.dataset.preset) === currentPreset);
                 });
             }
 
+            async function loadPreset(index) {
+                currentPreset = index;
+                const dbLayout = await loadLayoutFromDB(index);
+                if (dbLayout) {
+                    currentLayout = [...dbLayout];
+                    presets[index] = [...dbLayout];
+                } else {
+                    currentLayout = [...presets[index]];
+                }
+                updatePadsDisplay();
+                updatePresetButtons();
+            }
+
+            async function saveCurrentPreset() {
+                presets[currentPreset] = [...currentLayout];
+                localStorage.setItem('beatbox_presets_db', JSON.stringify(presets));
+                await saveLayoutToDB(currentPreset, currentLayout);
+            }
+
             // ============ LAYOUT ============
             function getPadClass(sampleIndex) {
                 if (sampleIndex >= 16) return 'pad-custom';
-                return `pad-${sampleIndex}`;
+                return 'pad-' + sampleIndex;
             }
 
             function getPadLabel(sampleIndex) {
                 if (sampleIndex >= 16) {
-                    const customIdx = sampleIndex - 16;
-                    return customSamples[customIdx] ? customSamples[customIdx].name : 'CUSTOM';
+                    const ci = sampleIndex - 16;
+                    return customSamples[ci] ? customSamples[ci].name : 'CUSTOM';
                 }
                 return sampleList[sampleIndex] ? sampleList[sampleIndex].name : '???';
             }
 
             function updatePadsDisplay() {
+                buildSampleList();
                 const pads = document.querySelectorAll('.pad');
                 pads.forEach(pad => {
                     const position = parseInt(pad.dataset.pad);
                     const sampleIndex = currentLayout[position];
-
-                    // Класс цвета
-                    pad.className = '';
-                    pad.classList.add('pad', getPadClass(sampleIndex));
+                    pad.className = 'pad';
+                    pad.classList.add(getPadClass(sampleIndex));
                     if (sampleIndex >= 16) pad.classList.add('custom-sample');
-
-                    // Режимы
                     if (editMode) pad.classList.add('edit-mode');
                     if (sampleSelectMode) pad.classList.add('sample-select-mode');
-
-                    // Текст
                     pad.querySelector('.pad-label').textContent = getPadLabel(sampleIndex);
                     pad.querySelector('.pad-number').textContent = position + 1;
                 });
@@ -789,18 +864,6 @@
                 saveCurrentPreset();
             }
 
-            function assignSampleToSelectedPad(sampleIndex) {
-                // Находим выбранный пэд (если есть) или используем первый
-                const targetPad = document.querySelector('.pad.selected-pad');
-                if (targetPad) {
-                    const padIndex = parseInt(targetPad.dataset.pad);
-                    currentLayout[padIndex] = sampleIndex;
-                    targetPad.classList.remove('selected-pad');
-                }
-                updatePadsDisplay();
-                saveCurrentPreset();
-            }
-
             // ============ SAMPLE LIST UI ============
             function renderSampleList(filter = '') {
                 const f = filter.toLowerCase();
@@ -808,12 +871,10 @@
                     .filter(s => s.name.toLowerCase().includes(f))
                     .map(s => {
                         const isCustom = s.type === 'custom';
-                        const cls = isCustom ? 'sample-item custom' : 'sample-item';
-                        const sel = s.index === selectedSampleIndex ? ' selected' : '';
-                        return `<div class="${cls}${sel}" data-sample="${s.index}">${s.name}</div>`;
+                        const cls = 'sample-item' + (isCustom ? ' custom' : '') + (s.index === selectedSampleIndex ? ' selected' : '');
+                        return '<div class="' + cls + '" data-sample="' + s.index + '" data-dbid="' + (s.dbId || '') + '">' + s.name + '</div>';
                     }).join('');
 
-                // Обработчики кликов
                 sampleListEl.querySelectorAll('.sample-item').forEach(item => {
                     item.addEventListener('click', () => {
                         selectedSampleIndex = parseInt(item.dataset.sample);
@@ -846,23 +907,19 @@
             fileInput.addEventListener('change', async (e) => {
                 const files = Array.from(e.target.files);
                 if (files.length === 0) return;
-
                 if (!audioCtx) initAudio();
 
                 for (const file of files) {
                     try {
                         const arrayBuffer = await file.arrayBuffer();
                         const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                        const name = file.name.replace(/\.[^/.]+$/, '').substring(0, 15).toUpperCase();
 
-                        const customIndex = 16 + customSamples.length;
-                        const name = file.name.replace(/\.[^/.]+$/, '').substring(0, 12).toUpperCase();
+                        const dbId = await saveSampleToDB(name, audioBuffer);
+                        customSamples.push({ id: dbId, name: name, buffer: audioBuffer });
 
-                        customSamples.push({ name, buffer: audioBuffer });
-                        sampleList.push({ name, type: 'custom', index: customIndex });
-
-                        // Если это первый пэд в sample select mode — сразу назначаем
                         if (sampleSelectMode) {
-                            selectedSampleIndex = customIndex;
+                            selectedSampleIndex = 16 + customSamples.length - 1;
                         }
                     } catch(err) {
                         console.error('Failed to load sample:', file.name, err);
@@ -870,12 +927,14 @@
                     }
                 }
 
+                buildSampleList();
                 renderSampleList(sampleSearch.value);
                 updatePadsDisplay();
+                saveCurrentPreset();
                 fileInput.value = '';
             });
 
-            // Назначить выбранный семпл на пэд
+            // Назначить семпл на пэд
             assignSampleBtn.addEventListener('click', () => {
                 if (selectedSampleIndex === null) return;
                 const targetPad = document.querySelector('.pad.selected-pad');
@@ -890,6 +949,34 @@
                 }
             });
 
+            // Удалить кастомный семпл
+            deleteSampleBtn.addEventListener('click', async () => {
+                if (selectedSampleIndex === null || selectedSampleIndex < 16) return;
+                const ci = selectedSampleIndex - 16;
+                const sample = customSamples[ci];
+                if (!sample) return;
+
+                if (!confirm('Удалить семпл "' + sample.name + '" навсегда?')) return;
+
+                await deleteSampleFromDB(sample.id);
+                customSamples.splice(ci, 1);
+
+                // Обновить лейаут — заменить удалённый семпл на KICK 1
+                for (let i = 0; i < currentLayout.length; i++) {
+                    if (currentLayout[i] === selectedSampleIndex) {
+                        currentLayout[i] = 0;
+                    } else if (currentLayout[i] > selectedSampleIndex) {
+                        currentLayout[i]--;
+                    }
+                }
+
+                selectedSampleIndex = null;
+                buildSampleList();
+                renderSampleList(sampleSearch.value);
+                updatePadsDisplay();
+                saveCurrentPreset();
+            });
+
             sampleSearch.addEventListener('input', () => renderSampleList(sampleSearch.value));
 
             // ============ TOUCH HANDLING ============
@@ -902,6 +989,9 @@
                 return null;
             }
 
+            let longPressTimer = null;
+            let longPressActive = false;
+
             padsGrid.addEventListener('touchstart', (e) => {
                 if (editMode || sampleSelectMode) {
                     e.preventDefault();
@@ -909,7 +999,6 @@
                     const pad = getPadAtPoint(touch.clientX, touch.clientY);
 
                     if (sampleSelectMode && pad) {
-                        // Выбор пэда для назначения семпла
                         document.querySelectorAll('.pad.selected-pad').forEach(p => p.classList.remove('selected-pad'));
                         pad.classList.add('selected-pad');
                         return;
@@ -927,7 +1016,6 @@
                     return;
                 }
 
-                // Обычный режим
                 e.preventDefault();
                 if (!audioCtx) initAudio();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -944,9 +1032,6 @@
                     }
                 }
             }, { passive: false });
-
-            let longPressTimer = null;
-            let longPressActive = false;
 
             padsGrid.addEventListener('touchmove', (e) => {
                 if (editMode && longPressActive && dragPadIndex !== null) {
@@ -1005,13 +1090,13 @@
                 for (const [id, idx] of activeTouches) {
                     if (idx === padIndex) return;
                 }
-                const pad = document.querySelector(`.pad[data-pad="${padIndex}"]`);
+                const pad = document.querySelector('.pad[data-pad="' + padIndex + '"]');
                 if (pad) pad.classList.remove('active');
             }
 
             document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-            // ============ AUDIO ============
+            // ============ AUDIO GENERATION ============
             function initAudio() {
                 if (audioCtx) return;
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1019,7 +1104,6 @@
                 masterGain.gain.value = volume;
                 masterGain.connect(audioCtx.destination);
 
-                // Генерируем 16 встроенных семплов
                 sampleBuffers = [];
                 sampleBuffers[0] = genKick(0.4, 150, 30, 15);
                 sampleBuffers[1] = genKick(0.35, 120, 25, 12);
@@ -1040,107 +1124,165 @@
             }
 
             function genKick(l, fS, fE, d) {
-                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
+                const sr = audioCtx.sampleRate;
+                const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr);
+                const data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
                     const t = i / sr;
-                    data[i] = Math.sin(2 * Math.PI * fS * Math.pow(fE / fS, i / len) * t) * Math.exp(-t * d) * 0.8 + (t < 0.005 ? (1 - t / 0.005) * 0.4 : 0);
-                }
-                return buf;
-            }
-            function genSnare(l, f, d, tM, nM) {
-                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    data[i] = (Math.sin(2 * Math.PI * f * t) * tM + (Math.random() * 2 - 1) * nM) * Math.exp(-t * d) * 0.7;
-                }
-                return buf;
-            }
-            function genHH(l, d, h) {
-                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    let s = (Math.random() * 2 - 1);
-                    if (i > 0) s -= data[i - 1] * h;
-                    data[i] = s * Math.exp(-i / sr * d) * 0.4;
-                }
-                return buf;
-            }
-            function genTom(fB, l, d) {
-                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    data[i] = Math.sin(2 * Math.PI * fB * Math.pow(0.5, i / len) * i / sr) * Math.exp(-i / sr * d) * 0.6;
-                }
-                return buf;
-            }
-            function genClap(l) {
-                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    data[i] = (Math.random() * 2 - 1) * (Math.exp(-t * 25) * 0.7 + (t > 0.02 && t < 0.04 ? 0.35 : 0) * Math.exp(-(t - 0.03) * 40)) * 0.5;
-                }
-                return buf;
-            }
-            function genRim(l) {
-                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    data[i] = (Math.sin(2 * Math.PI * 1000 * i / sr) * 0.3 + (Math.random() * 2 - 1) * 0.7) * Math.exp(-i / sr * 40) * 0.5;
-                }
-                return buf;
-            }
-            function genShaker(l) {
-                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / sr * 15) * (0.7 + 0.3 * Math.sin(i / sr * 80)) * 0.35;
-                }
-                return buf;
-            }
-            function genCrash(l) {
-                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    let s = (Math.random() * 2 - 1);
-                    if (i > 0) s -= data[i - 1] * 0.2;
-                    data[i] = s * Math.exp(-i / sr * 4) * 0.5;
-                }
-                return buf;
-            }
-            function genRide(l) {
-                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    let s = (Math.random() * 2 - 1);
-                    if (i > 0) s -= data[i - 1] * 0.3;
-                    data[i] = (Math.sin(2 * Math.PI * 800 * i / sr) * 0.4 + s * 0.6) * Math.exp(-i / sr * 6) * 0.45;
-                }
-                return buf;
-            }
-            function genPerc(l, fS, fE) {
-                const sr = audioCtx.sampleRate, len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr), data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    data[i] = Math.sin(2 * Math.PI * fS * Math.pow(fE / fS, i / len) * i / sr) * Math.exp(-i / sr * 30) * 0.5;
+                    const p = i / len;
+                    const freq = fS * Math.pow(fE / fS, p);
+                    const env = Math.exp(-t * d);
+                    const click = t < 0.005 ? (1 - t / 0.005) * 0.4 : 0;
+                    data[i] = Math.sin(2 * Math.PI * freq * t) * env * 0.8 + click;
                 }
                 return buf;
             }
 
+            function genSnare(l, f, d, tM, nM) {
+                const sr = audioCtx.sampleRate;
+                const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr);
+                const data = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) {
+                    const t = i / sr;
+                    const env = Math.exp(-t * d);
+                    const tone = Math.sin(2 * Math.PI * f * t) * tM;
+                    const noise = (Math.random() * 2 - 1) * nM;
+                    data[i] = (tone + noise) * env * 0.7;
+                }
+                return buf;
+            }
+
+            function genHH(l, d, h) {
+                const sr = audioCtx.sampleRate;
+                const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr);
+                const data = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) {
+                    const t = i / sr;
+                    const env = Math.exp(-t * d);
+                    let s = (Math.random() * 2 - 1);
+                    if (i > 0) s = s - data[i - 1] * h;
+                    data[i] = s * env * 0.4;
+                }
+                return buf;
+            }
+
+            function genTom(fB, l, d) {
+                const sr = audioCtx.sampleRate;
+                const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr);
+                const data = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) {
+                    const t = i / sr;
+                    const p = i / len;
+                    const freq = fB * Math.pow(0.5, p);
+                    const env = Math.exp(-t * d);
+                    data[i] = Math.sin(2 * Math.PI * freq * t) * env * 0.6;
+                }
+                return buf;
+            }
+
+            function genClap(l) {
+                const sr = audioCtx.sampleRate;
+                const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr);
+                const data = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) {
+                    const t = i / sr;
+                    const env = Math.exp(-t * 25) * 0.7 + (t > 0.02 && t < 0.04 ? 0.35 : 0) * Math.exp(-(t - 0.03) * 40);
+                    data[i] = (Math.random() * 2 - 1) * env * 0.5;
+                }
+                return buf;
+            }
+
+            function genRim(l) {
+                const sr = audioCtx.sampleRate;
+                const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr);
+                const data = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) {
+                    const t = i / sr;
+                    const env = Math.exp(-t * 40);
+                    const tone = Math.sin(2 * Math.PI * 1000 * t) * 0.3;
+                    const noise = (Math.random() * 2 - 1) * 0.7;
+                    data[i] = (tone + noise) * env * 0.5;
+                }
+                return buf;
+            }
+
+            function genShaker(l) {
+                const sr = audioCtx.sampleRate;
+                const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr);
+                const data = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) {
+                    const t = i / sr;
+                    const env = Math.exp(-t * 15) * (0.7 + 0.3 * Math.sin(t * 80));
+                    data[i] = (Math.random() * 2 - 1) * env * 0.35;
+                }
+                return buf;
+            }
+
+            function genCrash(l) {
+                const sr = audioCtx.sampleRate;
+                const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr);
+                const data = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) {
+                    const t = i / sr;
+                    const env = Math.exp(-t * 4);
+                    let s = (Math.random() * 2 - 1);
+                    if (i > 0) s = s - data[i - 1] * 0.2;
+                    data[i] = s * env * 0.5;
+                }
+                return buf;
+            }
+
+            function genRide(l) {
+                const sr = audioCtx.sampleRate;
+                const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr);
+                const data = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) {
+                    const t = i / sr;
+                    const env = Math.exp(-t * 6);
+                    const tone = Math.sin(2 * Math.PI * 800 * t) * 0.4;
+                    let noise = (Math.random() * 2 - 1);
+                    if (i > 0) noise = noise - data[i - 1] * 0.3;
+                    data[i] = (tone + noise * 0.6) * env * 0.45;
+                }
+                return buf;
+            }
+
+            function genPerc(l, fS, fE) {
+                const sr = audioCtx.sampleRate;
+                const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr);
+                const data = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) {
+                    const t = i / sr;
+                    const p = i / len;
+                    const freq = fS * Math.pow(fE / fS, p);
+                    const env = Math.exp(-t * 30);
+                    data[i] = Math.sin(2 * Math.PI * freq * t) * env * 0.5;
+                }
+                return buf;
+            }
+
+            // ============ PLAYBACK ============
             function playPad(sampleIndex, time) {
                 if (!audioCtx) initAudio();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
 
                 let buffer;
                 if (sampleIndex >= 16) {
-                    const customIdx = sampleIndex - 16;
-                    buffer = customSamples[customIdx] ? customSamples[customIdx].buffer : null;
+                    const ci = sampleIndex - 16;
+                    buffer = customSamples[ci] ? customSamples[ci].buffer : null;
                 } else {
                     buffer = sampleBuffers[sampleIndex];
                 }
-
                 if (!buffer) return;
 
                 const source = audioCtx.createBufferSource();
@@ -1149,7 +1291,8 @@
                 source.start(time || 0);
 
                 if (isRecording) {
-                    recordedEvents.push({ sampleIndex, time: (time || audioCtx.currentTime) - recordingStartTime });
+                    const eventTime = (time || audioCtx.currentTime) - recordingStartTime;
+                    recordedEvents.push({ sampleIndex, time: eventTime });
                 }
             }
 
@@ -1191,7 +1334,6 @@
                 recordBtn.disabled = true;
                 clearBtn.disabled = true;
                 setStatus('playing');
-
                 const now = audioCtx.currentTime;
                 recordedEvents.forEach(e => playPad(e.sampleIndex, now + e.time));
                 const last = Math.max(...recordedEvents.map(e => e.time));
@@ -1249,23 +1391,22 @@
                 if (sampleSelectMode) toggleSampleList();
                 editMode = !editMode;
                 editBtn.classList.toggle('active', editMode);
-                if (editMode) setStatus('editing', 'EDIT MODE');
-                else setStatus('ready', 'READY');
+                setStatus(editMode ? 'editing' : 'ready', editMode ? 'EDIT MODE' : 'READY');
                 updatePadsDisplay();
             });
 
             sampleBtn.addEventListener('click', toggleSampleList);
 
-            presetBar.addEventListener('click', (e) => {
+            presetBar.addEventListener('click', async (e) => {
                 const btn = e.target.closest('.preset-btn');
                 if (!btn) return;
                 if (btn === savePresetBtn) {
-                    saveCurrentPreset();
+                    await saveCurrentPreset();
                     btn.style.color = '#2ecc71';
                     setTimeout(() => btn.style.color = '#555', 500);
                     return;
                 }
-                loadPreset(parseInt(btn.dataset.preset));
+                await loadPreset(parseInt(btn.dataset.preset));
                 recordedEvents = [];
                 playBtn.disabled = true;
                 stopBtn.disabled = true;
@@ -1279,17 +1420,43 @@
             });
 
             // ============ INIT ============
-            loadPresets();
-            currentLayout = [...presets[0]];
-            updatePadsDisplay();
-            updateBPM();
-            setStatus('ready');
+            async function init() {
+                await openDB();
+                initAudio();
+
+                // Загружаем кастомные семплы из IndexedDB
+                const savedSamples = await loadAllSamplesFromDB();
+                customSamples = savedSamples;
+
+                // Загружаем пресеты из localStorage
+                try {
+                    const saved = localStorage.getItem('beatbox_presets_db');
+                    if (saved) {
+                        presets = JSON.parse(saved);
+                    }
+                } catch(e) {}
+
+                // Загружаем лейауты из IndexedDB (приоритет)
+                const dbLayouts = await loadAllLayoutsFromDB();
+                for (const key in dbLayouts) {
+                    presets[parseInt(key)] = dbLayouts[key];
+                }
+
+                currentLayout = [...presets[0]];
+                buildSampleList();
+                updatePadsDisplay();
+                updateBPM();
+                updatePresetButtons();
+                setStatus('ready');
+
+                console.log('🥁 BeatBox Pro ready! ' + customSamples.length + ' custom samples loaded from DB.');
+            }
+
+            init();
 
             document.addEventListener('touchstart', () => {
                 if (!audioCtx) initAudio();
             }, { once: true });
-
-            console.log('🥁 BeatBox Pro ready! Custom samples enabled.');
         })();
     </script>
 </body>
