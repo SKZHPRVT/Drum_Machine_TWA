@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover, maximum-scale=1.0, minimum-scale=1.0">
-    <title>Drum Machine Pro 16</title>
+    <title>BeatBox 16 Pro</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
@@ -20,11 +20,12 @@
             background: #0d0d0d;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             min-height: 100vh;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             padding: 6px;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
             touch-action: manipulation;
         }
 
@@ -40,7 +41,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 4px;
+            padding: 4px 4px 0;
         }
 
         .logo {
@@ -49,6 +50,32 @@
             font-weight: 900;
             letter-spacing: 3px;
             text-transform: uppercase;
+        }
+
+        .header-btns {
+            display: flex;
+            gap: 6px;
+        }
+
+        .icon-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid #333;
+            background: #1a1a1a;
+            color: #aaa;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.15s;
+        }
+
+        .icon-btn:active, .icon-btn.active {
+            background: #ff4757;
+            border-color: #ff4757;
+            color: #fff;
         }
 
         .bpm-compact {
@@ -73,12 +100,6 @@
             justify-content: center;
             align-items: center;
             font-weight: bold;
-            transition: background 0.15s;
-        }
-
-        .bpm-btn:active {
-            background: #ff4757;
-            color: #fff;
         }
 
         .bpm-value {
@@ -119,7 +140,7 @@
             letter-spacing: 0.5px;
             color: rgba(255, 255, 255, 0.85);
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-            transition: transform 0.04s ease-out, box-shadow 0.04s ease-out, border-color 0.15s;
+            transition: transform 0.04s ease-out, box-shadow 0.04s ease-out, border-color 0.15s, opacity 0.2s;
             position: relative;
             overflow: hidden;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.1);
@@ -129,6 +150,28 @@
             transform: scale(0.92);
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6), inset 0 2px 4px rgba(0,0,0,0.3);
             border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .pad.edit-mode {
+            border-color: rgba(255, 215, 0, 0.6);
+            border-style: dashed;
+            animation: edit-pulse 1.5s infinite;
+        }
+
+        .pad.drag-over {
+            border-color: #fff !important;
+            border-style: solid !important;
+            box-shadow: 0 0 20px rgba(255,255,255,0.3) !important;
+        }
+
+        .pad.dragging {
+            opacity: 0.4;
+            transform: scale(0.95);
+        }
+
+        @keyframes edit-pulse {
+            0%, 100% { border-color: rgba(255, 215, 0, 0.4); }
+            50% { border-color: rgba(255, 215, 0, 0.9); }
         }
 
         .pad::after {
@@ -151,7 +194,17 @@
             line-height: 1.2;
         }
 
-        /* Цвета 16 пэдов */
+        .pad .pad-number {
+            position: absolute;
+            top: 3px;
+            right: 5px;
+            font-size: 7px;
+            color: rgba(255,255,255,0.5);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Цвета */
         .pad-0  { background: linear-gradient(135deg, #b71c1c, #f44336); }
         .pad-1  { background: linear-gradient(135deg, #e65100, #ff9800); }
         .pad-2  { background: linear-gradient(135deg, #f9a825, #fdd835); }
@@ -169,6 +222,42 @@
         .pad-14 { background: linear-gradient(135deg, #00695c, #4db6ac); }
         .pad-15 { background: linear-gradient(135deg, #c2185b, #f06292); }
 
+        /* Пресеты */
+        .preset-bar {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            padding: 6px 10px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            background: #1a1a1a;
+            color: #888;
+            font-size: 10px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+
+        .preset-btn:active {
+            background: #333;
+            color: #fff;
+        }
+
+        .preset-btn.active-preset {
+            background: #ff4757;
+            border-color: #ff4757;
+            color: #fff;
+        }
+
+        .preset-save {
+            background: transparent;
+            border-style: dashed;
+            color: #555;
+        }
+
         .controls-row {
             display: flex;
             gap: 6px;
@@ -185,10 +274,7 @@
             padding: 5px 10px;
         }
 
-        .vol-icon {
-            color: #666;
-            font-size: 12px;
-        }
+        .vol-icon { color: #666; font-size: 12px; }
 
         .volume-slider {
             flex: 1;
@@ -209,7 +295,6 @@
             background: #fff;
             cursor: pointer;
             border: 2px solid #555;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
 
         .vol-num {
@@ -229,14 +314,12 @@
             font-size: 10px;
             letter-spacing: 1px;
             cursor: pointer;
-            transition: all 0.15s;
             text-transform: uppercase;
             white-space: nowrap;
+            transition: all 0.15s;
         }
 
-        .btn:active {
-            transform: scale(0.95);
-        }
+        .btn:active { transform: scale(0.95); }
 
         .btn-record {
             background: #2a2a2a;
@@ -291,6 +374,7 @@
             gap: 12px;
             font-size: 9px;
             letter-spacing: 1px;
+            padding-bottom: 8px;
         }
 
         .status-dot {
@@ -304,6 +388,7 @@
         .status-dot.ready { background: #2ecc71; }
         .status-dot.recording { background: #ff4757; animation: pulse-record 0.7s infinite; }
         .status-dot.playing { background: #f1c40f; }
+        .status-dot.editing { background: #ffd700; }
 
         .status-text {
             color: #555;
@@ -315,33 +400,45 @@
     <div class="container">
         <!-- Хэдер -->
         <div class="header">
-            <span class="logo">🥁 Drum Machine </span>
-            <div class="bpm-compact">
-                <button class="bpm-btn" id="bpmDown">−</button>
-                <span class="bpm-value" id="bpmValue">120</span>
-                <span class="bpm-label">bpm</span>
-                <button class="bpm-btn" id="bpmUp">+</button>
+            <span class="logo">🥁 BeatBox Pro</span>
+            <div class="header-btns">
+                <button class="icon-btn" id="editBtn" title="Edit layout">✎</button>
+                <div class="bpm-compact">
+                    <button class="bpm-btn" id="bpmDown">−</button>
+                    <span class="bpm-value" id="bpmValue">120</span>
+                    <span class="bpm-label">bpm</span>
+                    <button class="bpm-btn" id="bpmUp">+</button>
+                </div>
             </div>
         </div>
 
-        <!-- Пэды 4x4 -->
+        <!-- Пресеты -->
+        <div class="preset-bar" id="presetBar">
+            <button class="preset-btn active-preset" data-preset="0">A</button>
+            <button class="preset-btn" data-preset="1">B</button>
+            <button class="preset-btn" data-preset="2">C</button>
+            <button class="preset-btn" data-preset="3">D</button>
+            <button class="preset-btn preset-save" id="savePresetBtn">+</button>
+        </div>
+
+        <!-- Пэды -->
         <div class="pads-grid" id="padsGrid">
-            <div class="pad pad-0"  data-pad="0"><span class="pad-label">KICK 1</span></div>
-            <div class="pad pad-1"  data-pad="1"><span class="pad-label">KICK 2</span></div>
-            <div class="pad pad-2"  data-pad="2"><span class="pad-label">SNARE 1</span></div>
-            <div class="pad pad-3"  data-pad="3"><span class="pad-label">SNARE 2</span></div>
-            <div class="pad pad-4"  data-pad="4"><span class="pad-label">HH CL</span></div>
-            <div class="pad pad-5"  data-pad="5"><span class="pad-label">HH OP</span></div>
-            <div class="pad pad-6"  data-pad="6"><span class="pad-label">TOM HI</span></div>
-            <div class="pad pad-7"  data-pad="7"><span class="pad-label">TOM MID</span></div>
-            <div class="pad pad-8"  data-pad="8"><span class="pad-label">TOM LO</span></div>
-            <div class="pad pad-9"  data-pad="9"><span class="pad-label">CLAP</span></div>
-            <div class="pad pad-10" data-pad="10"><span class="pad-label">RIM</span></div>
-            <div class="pad pad-11" data-pad="11"><span class="pad-label">SHAKER</span></div>
-            <div class="pad pad-12" data-pad="12"><span class="pad-label">CRASH</span></div>
-            <div class="pad pad-13" data-pad="13"><span class="pad-label">RIDE</span></div>
-            <div class="pad pad-14" data-pad="14"><span class="pad-label">PERC 1</span></div>
-            <div class="pad pad-15" data-pad="15"><span class="pad-label">PERC 2</span></div>
+            <div class="pad pad-0" data-pad="0"><span class="pad-label">KICK 1</span><span class="pad-number">1</span></div>
+            <div class="pad pad-1" data-pad="1"><span class="pad-label">KICK 2</span><span class="pad-number">2</span></div>
+            <div class="pad pad-2" data-pad="2"><span class="pad-label">SNARE 1</span><span class="pad-number">3</span></div>
+            <div class="pad pad-3" data-pad="3"><span class="pad-label">SNARE 2</span><span class="pad-number">4</span></div>
+            <div class="pad pad-4" data-pad="4"><span class="pad-label">HH CL</span><span class="pad-number">5</span></div>
+            <div class="pad pad-5" data-pad="5"><span class="pad-label">HH OP</span><span class="pad-number">6</span></div>
+            <div class="pad pad-6" data-pad="6"><span class="pad-label">TOM HI</span><span class="pad-number">7</span></div>
+            <div class="pad pad-7" data-pad="7"><span class="pad-label">TOM MID</span><span class="pad-number">8</span></div>
+            <div class="pad pad-8" data-pad="8"><span class="pad-label">TOM LO</span><span class="pad-number">9</span></div>
+            <div class="pad pad-9" data-pad="9"><span class="pad-label">CLAP</span><span class="pad-number">10</span></div>
+            <div class="pad pad-10" data-pad="10"><span class="pad-label">RIM</span><span class="pad-number">11</span></div>
+            <div class="pad pad-11" data-pad="11"><span class="pad-label">SHAKER</span><span class="pad-number">12</span></div>
+            <div class="pad pad-12" data-pad="12"><span class="pad-label">CRASH</span><span class="pad-number">13</span></div>
+            <div class="pad pad-13" data-pad="13"><span class="pad-label">RIDE</span><span class="pad-number">14</span></div>
+            <div class="pad pad-14" data-pad="14"><span class="pad-label">PERC 1</span><span class="pad-number">15</span></div>
+            <div class="pad pad-15" data-pad="15"><span class="pad-label">PERC 2</span><span class="pad-number">16</span></div>
         </div>
 
         <!-- Управление -->
@@ -360,7 +457,6 @@
             <button class="btn btn-clear" id="clearBtn">✕ CLR</button>
         </div>
 
-        <!-- Статус -->
         <div class="status-bar">
             <span class="status-text">
                 <span class="status-dot ready" id="statusDot"></span>
@@ -390,10 +486,26 @@
             let playbackTimeout = null;
             let bpm = 120;
             const activeTouches = new Map();
+            let editMode = false;
+            let currentPreset = 0;
+            let dragPadIndex = null;
+
+            // Массив названий семплов
+            const sampleNames = [
+                'KICK 1', 'KICK 2', 'SNARE 1', 'SNARE 2',
+                'HH CL', 'HH OP', 'TOM HI', 'TOM MID',
+                'TOM LO', 'CLAP', 'RIM', 'SHAKER',
+                'CRASH', 'RIDE', 'PERC 1', 'PERC 2'
+            ];
+
+            // Пресеты: каждый пресет — массив из 16 индексов семплов
+            const defaultLayout = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+            let presets = [];
+            let currentLayout = [...defaultLayout];
 
             // ============ DOM REFS ============
             const padsGrid = document.getElementById('padsGrid');
-            const allPads = document.querySelectorAll('.pad');
+            let allPads = document.querySelectorAll('.pad');
             const recordBtn = document.getElementById('recordBtn');
             const playBtn = document.getElementById('playBtn');
             const stopBtn = document.getElementById('stopBtn');
@@ -405,6 +517,235 @@
             const bpmUp = document.getElementById('bpmUp');
             const statusDot = document.getElementById('statusDot');
             const statusLabel = document.getElementById('statusLabel');
+            const editBtn = document.getElementById('editBtn');
+            const presetBar = document.getElementById('presetBar');
+            const savePresetBtn = document.getElementById('savePresetBtn');
+
+            // ============ PRESETS ============
+            function loadPresets() {
+                try {
+                    const saved = localStorage.getItem('beatbox_presets');
+                    if (saved) {
+                        presets = JSON.parse(saved);
+                    } else {
+                        presets = [
+                            [...defaultLayout],
+                            [...defaultLayout],
+                            [...defaultLayout],
+                            [...defaultLayout]
+                        ];
+                    }
+                } catch(e) {
+                    presets = [
+                        [...defaultLayout],
+                        [...defaultLayout],
+                        [...defaultLayout],
+                        [...defaultLayout]
+                    ];
+                }
+            }
+
+            function savePresets() {
+                try {
+                    localStorage.setItem('beatbox_presets', JSON.stringify(presets));
+                } catch(e) {}
+            }
+
+            function loadPreset(index) {
+                currentPreset = index;
+                currentLayout = [...presets[index]];
+                updatePadsDisplay();
+                updatePresetButtons();
+            }
+
+            function saveCurrentPreset() {
+                presets[currentPreset] = [...currentLayout];
+                savePresets();
+            }
+
+            function updatePresetButtons() {
+                const btns = document.querySelectorAll('.preset-btn:not(.preset-save)');
+                btns.forEach(btn => {
+                    const idx = parseInt(btn.dataset.preset);
+                    btn.classList.toggle('active-preset', idx === currentPreset);
+                });
+            }
+
+            // ============ LAYOUT ============
+            function updatePadsDisplay() {
+                const pads = document.querySelectorAll('.pad');
+                pads.forEach(pad => {
+                    const position = parseInt(pad.dataset.pad);
+                    const sampleIndex = currentLayout[position];
+                    // Обновляем класс цвета
+                    pad.className = pad.className.replace(/pad-\d+/g, '');
+                    pad.classList.add('pad', `pad-${sampleIndex}`);
+                    // Обновляем текст
+                    const label = pad.querySelector('.pad-label');
+                    if (label) label.textContent = sampleNames[sampleIndex];
+                    // Обновляем номер
+                    const number = pad.querySelector('.pad-number');
+                    if (number) number.textContent = position + 1;
+
+                    if (editMode) {
+                        pad.classList.add('edit-mode');
+                    } else {
+                        pad.classList.remove('edit-mode');
+                    }
+                });
+                allPads = document.querySelectorAll('.pad');
+            }
+
+            function swapPads(posA, posB) {
+                const temp = currentLayout[posA];
+                currentLayout[posA] = currentLayout[posB];
+                currentLayout[posB] = temp;
+                updatePadsDisplay();
+                saveCurrentPreset();
+            }
+
+            function toggleEditMode() {
+                editMode = !editMode;
+                editBtn.classList.toggle('active', editMode);
+                updatePadsDisplay();
+                if (editMode) {
+                    setStatus('editing', 'EDIT MODE');
+                } else {
+                    setStatus('ready', 'READY');
+                }
+            }
+
+            // ============ DRAG AND DROP (для редактора) ============
+            function getPadAtPoint(x, y) {
+                const el = document.elementFromPoint(x, y);
+                if (el) {
+                    const pad = el.closest('.pad');
+                    if (pad) return pad;
+                }
+                return null;
+            }
+
+            // На мобильных: долгое нажатие в edit mode = начало перетаскивания
+            let longPressTimer = null;
+            let longPressActive = false;
+
+            padsGrid.addEventListener('touchstart', (e) => {
+                if (editMode) {
+                    e.preventDefault();
+                    const touch = e.changedTouches[0];
+                    const pad = getPadAtPoint(touch.clientX, touch.clientY);
+                    if (pad) {
+                        dragPadIndex = parseInt(pad.dataset.pad);
+                        // Долгое нажатие для захвата
+                        longPressTimer = setTimeout(() => {
+                            longPressActive = true;
+                            pad.classList.add('dragging');
+                            // Тактильный отклик
+                            if (navigator.vibrate) navigator.vibrate(10);
+                        }, 400);
+                    }
+                    return;
+                }
+
+                // Обычный режим — игра
+                e.preventDefault();
+                if (!audioCtx) initAudio();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                for (const touch of e.changedTouches) {
+                    if (activeTouches.has(touch.identifier)) continue;
+                    const pad = getPadAtPoint(touch.clientX, touch.clientY);
+                    if (pad) {
+                        const padIndex = parseInt(pad.dataset.pad);
+                        const sampleIndex = currentLayout[padIndex];
+                        activeTouches.set(touch.identifier, padIndex);
+                        pad.classList.add('active');
+                        playPad(sampleIndex);
+                    }
+                }
+            }, { passive: false });
+
+            padsGrid.addEventListener('touchmove', (e) => {
+                if (editMode && longPressActive && dragPadIndex !== null) {
+                    e.preventDefault();
+                    const touch = e.changedTouches[0];
+                    const pad = getPadAtPoint(touch.clientX, touch.clientY);
+                    
+                    // Убираем drag-over со всех
+                    document.querySelectorAll('.pad.drag-over').forEach(p => p.classList.remove('drag-over'));
+                    
+                    if (pad) {
+                        const targetIndex = parseInt(pad.dataset.pad);
+                        if (targetIndex !== dragPadIndex) {
+                            pad.classList.add('drag-over');
+                        }
+                    }
+                }
+            }, { passive: false });
+
+            padsGrid.addEventListener('touchend', (e) => {
+                if (editMode) {
+                    if (longPressTimer) clearTimeout(longPressTimer);
+                    
+                    if (longPressActive && dragPadIndex !== null) {
+                        const touch = e.changedTouches[0];
+                        const pad = getPadAtPoint(touch.clientX, touch.clientY);
+                        
+                        // Сбрасываем dragging
+                        const dragPad = document.querySelector(`.pad[data-pad="${dragPadIndex}"]`);
+                        if (dragPad) dragPad.classList.remove('dragging');
+                        
+                        // Сбрасываем drag-over
+                        document.querySelectorAll('.pad.drag-over').forEach(p => p.classList.remove('drag-over'));
+                        
+                        if (pad) {
+                            const targetIndex = parseInt(pad.dataset.pad);
+                            if (targetIndex !== dragPadIndex) {
+                                swapPads(dragPadIndex, targetIndex);
+                            }
+                        }
+                    }
+                    
+                    longPressActive = false;
+                    dragPadIndex = null;
+                    return;
+                }
+
+                // Обычный режим — отпускание пэда
+                for (const touch of e.changedTouches) {
+                    if (activeTouches.has(touch.identifier)) {
+                        const padIndex = activeTouches.get(touch.identifier);
+                        activeTouches.delete(touch.identifier);
+                        deactivatePad(padIndex);
+                    }
+                }
+            });
+
+            document.addEventListener('touchcancel', (e) => {
+                if (longPressTimer) clearTimeout(longPressTimer);
+                longPressActive = false;
+                dragPadIndex = null;
+                document.querySelectorAll('.pad.dragging').forEach(p => p.classList.remove('dragging'));
+                document.querySelectorAll('.pad.drag-over').forEach(p => p.classList.remove('drag-over'));
+
+                for (const touch of e.changedTouches) {
+                    if (activeTouches.has(touch.identifier)) {
+                        const padIndex = activeTouches.get(touch.identifier);
+                        activeTouches.delete(touch.identifier);
+                        deactivatePad(padIndex);
+                    }
+                }
+            });
+
+            function deactivatePad(padIndex) {
+                for (const [id, idx] of activeTouches) {
+                    if (idx === padIndex) return;
+                }
+                const pad = document.querySelector(`.pad[data-pad="${padIndex}"]`);
+                if (pad) pad.classList.remove('active');
+            }
+
+            document.addEventListener('contextmenu', (e) => e.preventDefault());
 
             // ============ AUDIO GENERATION ============
             function initAudio() {
@@ -415,9 +756,9 @@
                 masterGain.connect(audioCtx.destination);
 
                 sampleBuffers[0] = generateKick(0.4, 150, 30, 15);
-                sampleBuffers[1] = generateKick(0.35, 120, 25, 12); // Kick 2 — глубже
+                sampleBuffers[1] = generateKick(0.35, 120, 25, 12);
                 sampleBuffers[2] = generateSnare(0.3, 180, 20, 0.5, 0.5);
-                sampleBuffers[3] = generateSnare(0.25, 200, 25, 0.4, 0.6); // Snare 2 — ярче
+                sampleBuffers[3] = generateSnare(0.25, 200, 25, 0.4, 0.6);
                 sampleBuffers[4] = generateHH(0.08, 60, 0.5);
                 sampleBuffers[5] = generateHH(0.25, 10, 0.3);
                 sampleBuffers[6] = generateTom(300, 0.35, 12);
@@ -432,246 +773,138 @@
                 sampleBuffers[15] = generatePerc(0.1, 1200, 600);
             }
 
-            function generateKick(length, fStart, fEnd, decay) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * length);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const d = buf.getChannelData(0);
+            function generateKick(l, fS, fE, d) {
+                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    const p = i / len;
-                    const freq = fStart * Math.pow(fEnd / fStart, p);
-                    const env = Math.exp(-t * decay);
-                    const click = t < 0.005 ? (1 - t / 0.005) * 0.4 : 0;
-                    d[i] = Math.sin(2 * Math.PI * freq * t) * env * 0.8 + click;
+                    const t = i / sr, p = i / len;
+                    const freq = fS * Math.pow(fE / fS, p);
+                    const env = Math.exp(-t * d);
+                    data[i] = Math.sin(2 * Math.PI * freq * t) * env * 0.8 + (t < 0.005 ? (1 - t / 0.005) * 0.4 : 0);
                 }
                 return buf;
             }
 
-            function generateSnare(length, freq, decay, toneMix, noiseMix) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * length);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const d = buf.getChannelData(0);
+            function generateSnare(l, f, d, tM, nM) {
+                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    const env = Math.exp(-t * decay);
-                    const tone = Math.sin(2 * Math.PI * freq * t) * toneMix;
-                    const noise = (Math.random() * 2 - 1) * noiseMix;
-                    d[i] = (tone + noise) * env * 0.7;
+                    const t = i / sr, env = Math.exp(-t * d);
+                    data[i] = (Math.sin(2 * Math.PI * f * t) * tM + (Math.random() * 2 - 1) * nM) * env * 0.7;
                 }
                 return buf;
             }
 
-            function generateHH(length, decay, hpf) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * length);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const d = buf.getChannelData(0);
+            function generateHH(l, d, h) {
+                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    const env = Math.exp(-t * decay);
+                    const t = i / sr, env = Math.exp(-t * d);
                     let s = (Math.random() * 2 - 1);
-                    if (i > 0) s = s - d[i - 1] * hpf;
-                    d[i] = s * env * 0.4;
+                    if (i > 0) s = s - data[i - 1] * h;
+                    data[i] = s * env * 0.4;
                 }
                 return buf;
             }
 
-            function generateTom(freqBase, length, decay) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * length);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const d = buf.getChannelData(0);
+            function generateTom(fB, l, d) {
+                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    const p = i / len;
-                    const freq = freqBase * Math.pow(0.5, p);
-                    const env = Math.exp(-t * decay);
-                    d[i] = Math.sin(2 * Math.PI * freq * t) * env * 0.6;
+                    const t = i / sr, p = i / len;
+                    data[i] = Math.sin(2 * Math.PI * fB * Math.pow(0.5, p) * t) * Math.exp(-t * d) * 0.6;
                 }
                 return buf;
             }
 
-            function generateClap(length) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * length);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const d = buf.getChannelData(0);
+            function generateClap(l) {
+                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
                     const t = i / sr;
                     const env = Math.exp(-t * 25) * 0.7 + (t > 0.02 && t < 0.04 ? 0.35 : 0) * Math.exp(-(t - 0.03) * 40);
-                    d[i] = (Math.random() * 2 - 1) * env * 0.5;
+                    data[i] = (Math.random() * 2 - 1) * env * 0.5;
                 }
                 return buf;
             }
 
-            function generateRim(length) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * length);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const d = buf.getChannelData(0);
+            function generateRim(l) {
+                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
                     const t = i / sr;
-                    const env = Math.exp(-t * 40);
-                    const tone = Math.sin(2 * Math.PI * 1000 * t) * 0.3;
-                    const noise = (Math.random() * 2 - 1) * 0.7;
-                    d[i] = (tone + noise) * env * 0.5;
+                    data[i] = (Math.sin(2 * Math.PI * 1000 * t) * 0.3 + (Math.random() * 2 - 1) * 0.7) * Math.exp(-t * 40) * 0.5;
                 }
                 return buf;
             }
 
-            function generateShaker(length) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * length);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const d = buf.getChannelData(0);
+            function generateShaker(l) {
+                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
                     const t = i / sr;
-                    const env = Math.exp(-t * 15) * (0.7 + 0.3 * Math.sin(t * 80));
-                    d[i] = (Math.random() * 2 - 1) * env * 0.35;
+                    data[i] = (Math.random() * 2 - 1) * Math.exp(-t * 15) * (0.7 + 0.3 * Math.sin(t * 80)) * 0.35;
                 }
                 return buf;
             }
 
-            function generateCrash(length) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * length);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const d = buf.getChannelData(0);
+            function generateCrash(l) {
+                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    const env = Math.exp(-t * 4);
-                    let s = (Math.random() * 2 - 1);
-                    if (i > 0) s = s - d[i - 1] * 0.2;
-                    d[i] = s * env * 0.5;
+                    const t = i / sr; let s = (Math.random() * 2 - 1);
+                    if (i > 0) s = s - data[i - 1] * 0.2;
+                    data[i] = s * Math.exp(-t * 4) * 0.5;
                 }
                 return buf;
             }
 
-            function generateRide(length) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * length);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const d = buf.getChannelData(0);
+            function generateRide(l) {
+                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    const env = Math.exp(-t * 6);
-                    const tone = Math.sin(2 * Math.PI * 800 * t) * 0.4;
-                    let noise = (Math.random() * 2 - 1);
-                    if (i > 0) noise = noise - d[i - 1] * 0.3;
-                    d[i] = (tone + noise * 0.6) * env * 0.45;
+                    const t = i / sr; let s = (Math.random() * 2 - 1);
+                    if (i > 0) s = s - data[i - 1] * 0.3;
+                    data[i] = (Math.sin(2 * Math.PI * 800 * t) * 0.4 + s * 0.6) * Math.exp(-t * 6) * 0.45;
                 }
                 return buf;
             }
 
-            function generatePerc(length, fStart, fEnd) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * length);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const d = buf.getChannelData(0);
+            function generatePerc(l, fS, fE) {
+                const sr = audioCtx.sampleRate; const len = Math.floor(sr * l);
+                const buf = audioCtx.createBuffer(1, len, sr); const data = buf.getChannelData(0);
                 for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    const p = i / len;
-                    const freq = fStart * Math.pow(fEnd / fStart, p);
-                    const env = Math.exp(-t * 30);
-                    d[i] = Math.sin(2 * Math.PI * freq * t) * env * 0.5;
+                    const t = i / sr, p = i / len;
+                    data[i] = Math.sin(2 * Math.PI * fS * Math.pow(fE / fS, p) * t) * Math.exp(-t * 30) * 0.5;
                 }
                 return buf;
             }
 
             // ============ PLAYBACK ============
-            function playPad(padIndex, time) {
+            function playPad(sampleIndex, time) {
                 if (!audioCtx) initAudio();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
 
                 const source = audioCtx.createBufferSource();
-                source.buffer = sampleBuffers[padIndex];
+                source.buffer = sampleBuffers[sampleIndex];
                 source.connect(masterGain);
                 source.start(time || 0);
 
                 if (isRecording) {
                     const eventTime = (time || audioCtx.currentTime) - recordingStartTime;
-                    recordedEvents.push({ padIndex, time: eventTime });
+                    recordedEvents.push({ sampleIndex, time: eventTime });
                 }
             }
-
-            // ============ MULTITOUCH ============
-            function getPadAtPoint(x, y) {
-                const el = document.elementFromPoint(x, y);
-                if (el) {
-                    const pad = el.closest('.pad');
-                    if (pad) return parseInt(pad.dataset.pad);
-                }
-                return null;
-            }
-
-            function activatePad(padIndex) {
-                allPads[padIndex].classList.add('active');
-            }
-
-            function deactivatePad(padIndex) {
-                for (const [id, idx] of activeTouches) {
-                    if (idx === padIndex) return;
-                }
-                allPads[padIndex].classList.remove('active');
-            }
-
-            padsGrid.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                if (!audioCtx) initAudio();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-
-                for (const touch of e.changedTouches) {
-                    if (activeTouches.has(touch.identifier)) continue;
-
-                    const padIndex = getPadAtPoint(touch.clientX, touch.clientY);
-                    if (padIndex !== null) {
-                        activeTouches.set(touch.identifier, padIndex);
-                        activatePad(padIndex);
-                        playPad(padIndex);
-                    }
-                }
-            }, { passive: false });
-
-            document.addEventListener('touchend', (e) => {
-                for (const touch of e.changedTouches) {
-                    if (activeTouches.has(touch.identifier)) {
-                        const padIndex = activeTouches.get(touch.identifier);
-                        activeTouches.delete(touch.identifier);
-                        deactivatePad(padIndex);
-                    }
-                }
-            });
-
-            document.addEventListener('touchcancel', (e) => {
-                for (const touch of e.changedTouches) {
-                    if (activeTouches.has(touch.identifier)) {
-                        const padIndex = activeTouches.get(touch.identifier);
-                        activeTouches.delete(touch.identifier);
-                        deactivatePad(padIndex);
-                    }
-                }
-            });
-
-            document.addEventListener('contextmenu', (e) => e.preventDefault());
 
             // ============ RECORDING ============
-            function setStatus(mode) {
+            function setStatus(mode, label) {
                 statusDot.className = 'status-dot';
-                if (mode === 'ready') {
-                    statusDot.classList.add('ready');
-                    statusLabel.textContent = 'READY';
-                } else if (mode === 'recording') {
-                    statusDot.classList.add('recording');
-                    statusLabel.textContent = 'RECORDING';
-                } else if (mode === 'playing') {
-                    statusDot.classList.add('playing');
-                    statusLabel.textContent = 'PLAYING';
-                }
+                statusDot.classList.add(mode);
+                statusLabel.textContent = label || mode.toUpperCase();
             }
 
             recordBtn.addEventListener('click', () => {
+                if (editMode) return;
                 if (!audioCtx) initAudio();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
 
@@ -690,16 +923,13 @@
                     recordBtn.classList.remove('recording');
                     recordBtn.textContent = '⏺ REC';
                     setStatus('ready');
-                    if (recordedEvents.length === 0) {
-                        playBtn.disabled = true;
-                    }
+                    if (recordedEvents.length === 0) playBtn.disabled = true;
                 }
             });
 
             // ============ PLAYBACK ============
             function startPlayback() {
                 if (recordedEvents.length === 0) return;
-
                 isPlaying = true;
                 playBtn.disabled = true;
                 stopBtn.disabled = false;
@@ -709,14 +939,11 @@
 
                 const now = audioCtx.currentTime;
                 recordedEvents.forEach(event => {
-                    playPad(event.padIndex, now + event.time);
+                    playPad(event.sampleIndex, now + event.time);
                 });
 
                 const lastTime = Math.max(...recordedEvents.map(e => e.time));
-                const duration = (lastTime + 0.5) * 1000;
-                playbackTimeout = setTimeout(() => {
-                    stopPlayback();
-                }, duration);
+                playbackTimeout = setTimeout(() => stopPlayback(), (lastTime + 0.5) * 1000);
             }
 
             function stopPlayback() {
@@ -726,13 +953,11 @@
                 recordBtn.disabled = false;
                 clearBtn.disabled = false;
                 setStatus('ready');
-                if (playbackTimeout) {
-                    clearTimeout(playbackTimeout);
-                    playbackTimeout = null;
-                }
+                if (playbackTimeout) { clearTimeout(playbackTimeout); playbackTimeout = null; }
             }
 
             playBtn.addEventListener('click', () => {
+                if (editMode) return;
                 if (!audioCtx) initAudio();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
                 startPlayback();
@@ -752,33 +977,17 @@
             volumeSlider.addEventListener('input', () => {
                 volume = parseInt(volumeSlider.value) / 100;
                 volNum.textContent = volumeSlider.value;
-                if (masterGain) {
-                    masterGain.gain.setValueAtTime(volume, audioCtx.currentTime);
-                }
+                if (masterGain) masterGain.gain.setValueAtTime(volume, audioCtx.currentTime);
             });
 
             // ============ BPM ============
-            function updateBPM() {
-                bpmValue.textContent = bpm;
-            }
-
+            function updateBPM() { bpmValue.textContent = bpm; }
             let bpmInterval = null;
-            function startBPMChange(delta) {
-                bpm = Math.max(40, Math.min(240, bpm + delta));
-                updateBPM();
-                bpmInterval = setInterval(() => {
-                    bpm = Math.max(40, Math.min(240, bpm + delta));
-                    updateBPM();
-                }, 80);
+            function startBPMChange(d) {
+                bpm = Math.max(40, Math.min(240, bpm + d)); updateBPM();
+                bpmInterval = setInterval(() => { bpm = Math.max(40, Math.min(240, bpm + d)); updateBPM(); }, 80);
             }
-
-            function stopBPMChange() {
-                if (bpmInterval) {
-                    clearInterval(bpmInterval);
-                    bpmInterval = null;
-                }
-            }
-
+            function stopBPMChange() { if (bpmInterval) { clearInterval(bpmInterval); bpmInterval = null; } }
             bpmDown.addEventListener('pointerdown', () => startBPMChange(-1));
             bpmDown.addEventListener('pointerup', stopBPMChange);
             bpmDown.addEventListener('pointerleave', stopBPMChange);
@@ -786,7 +995,40 @@
             bpmUp.addEventListener('pointerup', stopBPMChange);
             bpmUp.addEventListener('pointerleave', stopBPMChange);
 
+            // ============ EDIT MODE ============
+            editBtn.addEventListener('click', toggleEditMode);
+
+            // ============ PRESET BUTTONS ============
+            presetBar.addEventListener('click', (e) => {
+                const btn = e.target.closest('.preset-btn');
+                if (!btn) return;
+
+                if (btn === savePresetBtn) {
+                    // Сохранить текущий пресет
+                    saveCurrentPreset();
+                    btn.style.color = '#2ecc71';
+                    setTimeout(() => { btn.style.color = '#555'; }, 500);
+                    return;
+                }
+
+                const presetIndex = parseInt(btn.dataset.preset);
+                loadPreset(presetIndex);
+                recordedEvents = [];
+                playBtn.disabled = true;
+                stopBtn.disabled = true;
+                if (isPlaying) stopPlayback();
+                if (isRecording) {
+                    isRecording = false;
+                    recordBtn.classList.remove('recording');
+                    recordBtn.textContent = '⏺ REC';
+                }
+                setStatus('ready');
+            });
+
             // ============ INIT ============
+            loadPresets();
+            currentLayout = [...presets[0]];
+            updatePadsDisplay();
             updateBPM();
             setStatus('ready');
 
@@ -794,7 +1036,7 @@
                 if (!audioCtx) initAudio();
             }, { once: true });
 
-            console.log('🥁 Drum Machine ready! 16 пэдов, мультитач.');
+            console.log('🥁 BeatBox Pro ready! Edit mode, presets, drag & drop.');
         })();
     </script>
 </body>
