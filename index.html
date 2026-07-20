@@ -224,6 +224,16 @@
             border-color: rgba(0, 200, 255, 0.5);
         }
 
+        .pad .pad-pitch {
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            font-size: 6px;
+            color: rgba(255,255,255,0.5);
+            z-index: 1;
+            pointer-events: none;
+        }
+
         .pad .custom-indicator {
             position: absolute;
             bottom: 3px;
@@ -309,7 +319,7 @@
             background: #1a1a1a;
             border-radius: 12px;
             padding: 8px;
-            max-height: 200px;
+            max-height: 250px;
             overflow-y: auto;
         }
 
@@ -358,6 +368,46 @@
             color: #00c8ff;
         }
 
+        /* Пич-контрол для выбранного пэда */
+        .pad-pitch-control {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 6px 0;
+            padding: 6px 10px;
+            background: #0d0d0d;
+            border-radius: 8px;
+        }
+
+        .pad-pitch-label {
+            color: #aaa;
+            font-size: 10px;
+            white-space: nowrap;
+        }
+
+        .pad-pitch-value {
+            color: #f1c40f;
+            font-size: 12px;
+            font-weight: 700;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .pad-pitch-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 1px solid #333;
+            background: #1a1a1a;
+            color: #f1c40f;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+        }
+
         .sample-actions {
             display: flex;
             gap: 6px;
@@ -389,16 +439,6 @@
         .sample-action-btn.delete-btn {
             border-color: #ff4757;
             color: #ff4757;
-        }
-
-        .sample-action-btn.pitch-up {
-            border-color: #f1c40f;
-            color: #f1c40f;
-        }
-
-        .sample-action-btn.pitch-down {
-            border-color: #f1c40f;
-            color: #f1c40f;
         }
 
         /* Пресеты */
@@ -589,8 +629,8 @@
             <div class="header-btns">
                 <button class="icon-btn" id="sampleBtn" title="Select sample">♫</button>
                 <button class="icon-btn" id="editBtn" title="Edit layout">✎</button>
-                <button class="icon-btn" id="pitchUpBtn" title="Pitch +">↑</button>
-                <button class="icon-btn" id="pitchDownBtn" title="Pitch -">↓</button>
+                <button class="icon-btn" id="globalPitchUpBtn" title="Global Pitch +">↑</button>
+                <button class="icon-btn" id="globalPitchDownBtn" title="Global Pitch -">↓</button>
                 <div class="bpm-compact">
                     <button class="bpm-btn" id="bpmDown">−</button>
                     <span class="bpm-value" id="bpmValue">120</span>
@@ -616,15 +656,19 @@
             <button class="preset-btn preset-save" id="savePresetBtn">+</button>
         </div>
 
-        <!-- Список семплов -->
+        <!-- Список семплов + питч для пэда -->
         <div class="sample-list-container" id="sampleListContainer">
             <input type="text" class="sample-search" id="sampleSearch" placeholder="🔍 Поиск семплов...">
+            <div class="pad-pitch-control" id="padPitchControl">
+                <span class="pad-pitch-label">🎵 Pitch:</span>
+                <button class="pad-pitch-btn" id="padPitchDown">−</button>
+                <span class="pad-pitch-value" id="padPitchValue">0</span>
+                <button class="pad-pitch-btn" id="padPitchUp">+</button>
+            </div>
             <div class="sample-list" id="sampleList"></div>
             <div class="sample-actions">
                 <button class="sample-action-btn upload-btn" id="uploadSampleBtn">📁 ЗАГРУЗИТЬ</button>
                 <button class="sample-action-btn assign-btn" id="assignSampleBtn">✓ НАЗНАЧИТЬ</button>
-                <button class="sample-action-btn pitch-up" id="pitchUpSampleBtn">+1</button>
-                <button class="sample-action-btn pitch-down" id="pitchDownSampleBtn">-1</button>
                 <button class="sample-action-btn delete-btn" id="deleteSampleBtn">🗑</button>
             </div>
             <input type="file" class="hidden-file-input" id="fileInput" accept="audio/*" multiple>
@@ -632,22 +676,22 @@
 
         <!-- Пэды 4×4 -->
         <div class="pads-grid" id="padsGrid">
-            <div class="pad pad-0" data-pad="0"><span class="pad-label">KICK 1</span><span class="pad-number">1</span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-1" data-pad="1"><span class="pad-label">KICK 2</span><span class="pad-number">2</span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-2" data-pad="2"><span class="pad-label">SNARE 1</span><span class="pad-number">3</span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-3" data-pad="3"><span class="pad-label">SNARE 2</span><span class="pad-number">4</span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-4" data-pad="4"><span class="pad-label">HH CL</span><span class="pad-number">5</span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-5" data-pad="5"><span class="pad-label">HH OP</span><span class="pad-number">6</span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-6" data-pad="6"><span class="pad-label">TOM HI</span><span class="pad-number">7</span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-7" data-pad="7"><span class="pad-label">TOM MID</span><span class="pad-number">8</span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-8" data-pad="8"><span class="pad-label">TOM LO</span><span class="pad-number">9</span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-9" data-pad="9"><span class="pad-label">CLAP</span><span class="pad-number">10</span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-10" data-pad="10"><span class="pad-label">RIM</span><span class="pad-number">11</span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-11" data-pad="11"><span class="pad-label">SHAKER</span><span class="pad-number">12</span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-12" data-pad="12"><span class="pad-label">CRASH</span><span class="pad-number">13</span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-13" data-pad="13"><span class="pad-label">RIDE</span><span class="pad-number">14</span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-14" data-pad="14"><span class="pad-label">PERC 1</span><span class="pad-number">15</span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-15" data-pad="15"><span class="pad-label">PERC 2</span><span class="pad-number">16</span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-0" data-pad="0"><span class="pad-label">KICK 1</span><span class="pad-number">1</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-1" data-pad="1"><span class="pad-label">KICK 2</span><span class="pad-number">2</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-2" data-pad="2"><span class="pad-label">SNARE 1</span><span class="pad-number">3</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-3" data-pad="3"><span class="pad-label">SNARE 2</span><span class="pad-number">4</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-4" data-pad="4"><span class="pad-label">HH CL</span><span class="pad-number">5</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-5" data-pad="5"><span class="pad-label">HH OP</span><span class="pad-number">6</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-6" data-pad="6"><span class="pad-label">TOM HI</span><span class="pad-number">7</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-7" data-pad="7"><span class="pad-label">TOM MID</span><span class="pad-number">8</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-8" data-pad="8"><span class="pad-label">TOM LO</span><span class="pad-number">9</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-9" data-pad="9"><span class="pad-label">CLAP</span><span class="pad-number">10</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-10" data-pad="10"><span class="pad-label">RIM</span><span class="pad-number">11</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-11" data-pad="11"><span class="pad-label">SHAKER</span><span class="pad-number">12</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-12" data-pad="12"><span class="pad-label">CRASH</span><span class="pad-number">13</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-13" data-pad="13"><span class="pad-label">RIDE</span><span class="pad-number">14</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-14" data-pad="14"><span class="pad-label">PERC 1</span><span class="pad-number">15</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
+            <div class="pad pad-15" data-pad="15"><span class="pad-label">PERC 2</span><span class="pad-number">16</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
         </div>
 
         <!-- Управление -->
@@ -676,13 +720,12 @@
 
     <script>
         (function() {
-            // ============ TELEGRAM ============
             const tg = window.Telegram.WebApp;
             tg.ready();
             tg.expand();
 
             // ============ INDEXEDDB ============
-            const DB_NAME = 'BeatBox64DB';
+            const DB_NAME = 'BeatBox64DBv2';
             const DB_VERSION = 1;
             let db = null;
 
@@ -698,15 +741,11 @@
                             db.createObjectStore('layouts', { keyPath: 'presetIndex' });
                         }
                     };
-                    request.onsuccess = (e) => {
-                        db = e.target.result;
-                        resolve(db);
-                    };
+                    request.onsuccess = (e) => { db = e.target.result; resolve(db); };
                     request.onerror = (e) => reject(e.target.error);
                 });
             }
 
-            // --- Операции с семплами ---
             function saveSampleToDB(name, audioBuffer) {
                 return new Promise((resolve, reject) => {
                     const tx = db.transaction('samples', 'readwrite');
@@ -715,147 +754,103 @@
                     for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
                         channels.push(Array.from(audioBuffer.getChannelData(ch)));
                     }
-                    const data = {
-                        name: name,
-                        sampleRate: audioBuffer.sampleRate,
-                        length: audioBuffer.length,
-                        numberOfChannels: audioBuffer.numberOfChannels,
-                        channels: channels
-                    };
-                    const request = store.add(data);
-                    request.onsuccess = () => resolve(request.result);
-                    request.onerror = (e) => reject(e.target.error);
+                    store.add({
+                        name, sampleRate: audioBuffer.sampleRate,
+                        length: audioBuffer.length, numberOfChannels: audioBuffer.numberOfChannels,
+                        channels
+                    }).onsuccess = (e) => resolve(e.target.result);
                 });
             }
 
             function loadAllSamplesFromDB() {
-                return new Promise((resolve, reject) => {
+                return new Promise((resolve) => {
                     const tx = db.transaction('samples', 'readonly');
-                    const store = tx.objectStore('samples');
-                    const request = store.getAll();
-                    request.onsuccess = () => {
-                        const results = request.result;
-                        const buffers = [];
-                        for (const item of results) {
+                    tx.objectStore('samples').getAll().onsuccess = (e) => {
+                        const results = e.target.result;
+                        const buffers = results.map(item => {
                             if (!audioCtx) initAudio();
-                            const buf = audioCtx.createBuffer(
-                                item.numberOfChannels,
-                                item.length,
-                                item.sampleRate
-                            );
+                            const buf = audioCtx.createBuffer(item.numberOfChannels, item.length, item.sampleRate);
                             for (let ch = 0; ch < item.numberOfChannels; ch++) {
                                 buf.copyToChannel(new Float32Array(item.channels[ch]), ch);
                             }
-                            buffers.push({
-                                id: item.id,
-                                name: item.name,
-                                buffer: buf
-                            });
-                        }
+                            return { id: item.id, name: item.name, buffer: buf };
+                        });
                         resolve(buffers);
                     };
-                    request.onerror = (e) => reject(e.target.error);
                 });
             }
 
             function deleteSampleFromDB(id) {
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction('samples', 'readwrite');
-                    const store = tx.objectStore('samples');
-                    const request = store.delete(id);
-                    request.onsuccess = () => resolve();
-                    request.onerror = (e) => reject(e.target.error);
+                return new Promise((resolve) => {
+                    db.transaction('samples', 'readwrite').objectStore('samples').delete(id).onsuccess = resolve;
                 });
             }
 
-            // --- Операции с лейаутами ---
-            function saveLayoutToDB(presetIndex, layout) {
-                return new Promise((resolve, reject) => {
+            function saveLayoutToDB(idx, layout, pitches) {
+                return new Promise((resolve) => {
                     const tx = db.transaction('layouts', 'readwrite');
-                    const store = tx.objectStore('layouts');
-                    store.put({ presetIndex, layout });
-                    tx.oncomplete = () => resolve();
-                    tx.onerror = (e) => reject(e.target.error);
+                    tx.objectStore('layouts').put({ presetIndex: idx, layout, pitches });
+                    tx.oncomplete = resolve;
                 });
             }
 
-            function loadLayoutFromDB(presetIndex) {
-                return new Promise((resolve, reject) => {
+            function loadLayoutFromDB(idx) {
+                return new Promise((resolve) => {
                     const tx = db.transaction('layouts', 'readonly');
-                    const store = tx.objectStore('layouts');
-                    const request = store.get(presetIndex);
-                    request.onsuccess = () => resolve(request.result ? request.result.layout : null);
-                    request.onerror = (e) => reject(e.target.error);
+                    const req = tx.objectStore('layouts').get(idx);
+                    req.onsuccess = () => resolve(req.result || null);
                 });
             }
 
             function loadAllLayoutsFromDB() {
-                return new Promise((resolve, reject) => {
+                return new Promise((resolve) => {
                     const tx = db.transaction('layouts', 'readonly');
-                    const store = tx.objectStore('layouts');
-                    const request = store.getAll();
-                    request.onsuccess = () => {
-                        const layouts = {};
-                        for (const item of request.result) {
-                            layouts[item.presetIndex] = item.layout;
-                        }
-                        resolve(layouts);
+                    tx.objectStore('layouts').getAll().onsuccess = (e) => {
+                        const result = {};
+                        e.target.result.forEach(item => { result[item.presetIndex] = item; });
+                        resolve(result);
                     };
-                    request.onerror = (e) => reject(e.target.error);
                 });
             }
 
             // ============ AUDIO ENGINE ============
-            let audioCtx = null;
-            let masterGain = null;
-            let sampleBuffers = [];
-            let volume = 0.8;
-
-            // ============ STATE ============
-            let isRecording = false;
-            let recordedEvents = [];
-            let recordingStartTime = 0;
-            let isPlaying = false;
-            let playbackTimeout = null;
-            let bpm = 120;
+            let audioCtx = null, masterGain = null, sampleBuffers = [], volume = 0.8;
+            let isRecording = false, recordedEvents = [], recordingStartTime = 0;
+            let isPlaying = false, playbackTimeout = null, bpm = 120;
             const activeTouches = new Map();
-            let editMode = false;
-            let sampleSelectMode = false;
-            let currentPreset = 0;
-            let dragPadIndex = null;
+            let editMode = false, sampleSelectMode = false;
+            let currentPreset = 0, dragPadIndex = null;
             let selectedSampleIndex = null;
-            let pitchShift = 0; // -12..+12 полутонов
+            let selectedPadIndex = null;
+            let globalPitchShift = 0;
 
             const builtinNames = [
-                'KICK 1', 'KICK 2', 'SNARE 1', 'SNARE 2',
-                'HH CL', 'HH OP', 'TOM HI', 'TOM MID',
-                'TOM LO', 'CLAP', 'RIM', 'SHAKER',
-                'CRASH', 'RIDE', 'PERC 1', 'PERC 2'
+                'KICK 1','KICK 2','SNARE 1','SNARE 2','HH CL','HH OP','TOM HI','TOM MID',
+                'TOM LO','CLAP','RIM','SHAKER','CRASH','RIDE','PERC 1','PERC 2'
             ];
-
-            const bankNames = ['BANK A', 'BANK B', 'BANK C', 'BANK D'];
+            const bankNames = ['BANK A','BANK B','BANK C','BANK D'];
             const defaultLayout = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
-            let presets = [[...defaultLayout],[...defaultLayout],[...defaultLayout],[...defaultLayout]];
+            const defaultPitches = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+
+            let presets = [
+                { layout: [...defaultLayout], pitches: [...defaultPitches] },
+                { layout: [...defaultLayout], pitches: [...defaultPitches] },
+                { layout: [...defaultLayout], pitches: [...defaultPitches] },
+                { layout: [...defaultLayout], pitches: [...defaultPitches] }
+            ];
             let currentLayout = [...defaultLayout];
-            let customSamples = [];
-            let sampleList = [];
+            let currentPitches = [...defaultPitches];
+            let customSamples = [], sampleList = [];
 
             function buildSampleList() {
                 sampleList = [];
-                for (let i = 0; i < 16; i++) {
-                    sampleList.push({ name: builtinNames[i], type: 'builtin', index: i });
-                }
+                for (let i = 0; i < 16; i++) sampleList.push({ name: builtinNames[i], type: 'builtin', index: i });
                 for (let i = 0; i < customSamples.length; i++) {
-                    sampleList.push({
-                        name: customSamples[i].name,
-                        type: 'custom',
-                        index: 16 + i,
-                        dbId: customSamples[i].id
-                    });
+                    sampleList.push({ name: customSamples[i].name, type: 'custom', index: 16 + i, dbId: customSamples[i].id });
                 }
             }
 
-            // ============ DOM REFS ============
+            // ============ DOM ============
             const padsGrid = document.getElementById('padsGrid');
             const recordBtn = document.getElementById('recordBtn');
             const playBtn = document.getElementById('playBtn');
@@ -876,18 +871,20 @@
             const uploadSampleBtn = document.getElementById('uploadSampleBtn');
             const assignSampleBtn = document.getElementById('assignSampleBtn');
             const deleteSampleBtn = document.getElementById('deleteSampleBtn');
-            const pitchUpSampleBtn = document.getElementById('pitchUpSampleBtn');
-            const pitchDownSampleBtn = document.getElementById('pitchDownSampleBtn');
-            const pitchUpBtn = document.getElementById('pitchUpBtn');
-            const pitchDownBtn = document.getElementById('pitchDownBtn');
             const fileInput = document.getElementById('fileInput');
             const presetBar = document.getElementById('presetBar');
             const savePresetBtn = document.getElementById('savePresetBtn');
             const bankIndicator = document.getElementById('bankIndicator');
             const bankPrev = document.getElementById('bankPrev');
             const bankNext = document.getElementById('bankNext');
+            const globalPitchUpBtn = document.getElementById('globalPitchUpBtn');
+            const globalPitchDownBtn = document.getElementById('globalPitchDownBtn');
+            const padPitchControl = document.getElementById('padPitchControl');
+            const padPitchValue = document.getElementById('padPitchValue');
+            const padPitchUp = document.getElementById('padPitchUp');
+            const padPitchDown = document.getElementById('padPitchDown');
 
-            // ============ PRESETS & BANKS ============
+            // ============ PRESETS ============
             function updatePresetButtons() {
                 document.querySelectorAll('.preset-btn:not(.preset-save)').forEach(btn => {
                     btn.classList.toggle('active-preset', parseInt(btn.dataset.preset) === currentPreset);
@@ -897,21 +894,23 @@
 
             async function loadPreset(index) {
                 currentPreset = index;
-                const dbLayout = await loadLayoutFromDB(index);
-                if (dbLayout) {
-                    currentLayout = [...dbLayout];
-                    presets[index] = [...dbLayout];
+                const dbData = await loadLayoutFromDB(index);
+                if (dbData && dbData.layout) {
+                    currentLayout = [...dbData.layout];
+                    currentPitches = dbData.pitches ? [...dbData.pitches] : [...defaultPitches];
+                    presets[index] = { layout: [...dbData.layout], pitches: [...currentPitches] };
                 } else {
-                    currentLayout = [...presets[index]];
+                    currentLayout = [...presets[index].layout];
+                    currentPitches = [...presets[index].pitches];
                 }
                 updatePadsDisplay();
                 updatePresetButtons();
             }
 
             async function saveCurrentPreset() {
-                presets[currentPreset] = [...currentLayout];
-                localStorage.setItem('beatbox64_presets', JSON.stringify(presets));
-                await saveLayoutToDB(currentPreset, currentLayout);
+                presets[currentPreset] = { layout: [...currentLayout], pitches: [...currentPitches] };
+                localStorage.setItem('beatbox64_presets_v2', JSON.stringify(presets));
+                await saveLayoutToDB(currentPreset, currentLayout, currentPitches);
             }
 
             // ============ LAYOUT ============
@@ -932,50 +931,70 @@
                 buildSampleList();
                 const pads = document.querySelectorAll('.pad');
                 pads.forEach(pad => {
-                    const position = parseInt(pad.dataset.pad);
-                    const sampleIndex = currentLayout[position];
+                    const pos = parseInt(pad.dataset.pad);
+                    const si = currentLayout[pos];
+                    const pitch = currentPitches[pos];
 
                     pad.className = 'pad';
-                    pad.classList.add(getPadClass(sampleIndex));
-                    if (sampleIndex >= 16) pad.classList.add('custom-sample');
+                    pad.classList.add(getPadClass(si));
+                    if (si >= 16) pad.classList.add('custom-sample');
                     if (editMode) pad.classList.add('edit-mode');
                     if (sampleSelectMode) pad.classList.add('sample-select-mode');
 
-                    pad.querySelector('.pad-label').textContent = getPadLabel(sampleIndex);
-                    pad.querySelector('.pad-number').textContent = position + 1;
+                    pad.querySelector('.pad-label').textContent = getPadLabel(si);
+                    pad.querySelector('.pad-number').textContent = pos + 1;
+                    const pitchEl = pad.querySelector('.pad-pitch');
+                    pitchEl.textContent = pitch !== 0 ? (pitch > 0 ? '+' : '') + pitch : '';
+                    pitchEl.style.color = pitch !== 0 ? '#f1c40f' : 'rgba(255,255,255,0.3)';
                 });
+                updatePadPitchUI();
+            }
+
+            function updatePadPitchUI() {
+                if (selectedPadIndex !== null) {
+                    padPitchValue.textContent = (currentPitches[selectedPadIndex] >= 0 ? '+' : '') + currentPitches[selectedPadIndex];
+                } else {
+                    padPitchValue.textContent = '—';
+                }
             }
 
             function swapPads(posA, posB) {
                 [currentLayout[posA], currentLayout[posB]] = [currentLayout[posB], currentLayout[posA]];
+                [currentPitches[posA], currentPitches[posB]] = [currentPitches[posB], currentPitches[posA]];
                 updatePadsDisplay();
                 saveCurrentPreset();
             }
 
-            // ============ PITCH SHIFT ============
-            function shiftPitch(semitones) {
-                pitchShift = Math.max(-12, Math.min(12, pitchShift + semitones));
-                pitchUpBtn.style.color = pitchShift > 0 ? '#f1c40f' : '#aaa';
-                pitchDownBtn.style.color = pitchShift < 0 ? '#f1c40f' : '#aaa';
-                setStatus('ready', 'PITCH: ' + (pitchShift >= 0 ? '+' : '') + pitchShift);
-                setTimeout(() => {
-                    if (statusLabel.textContent.startsWith('PITCH')) {
-                        setStatus('ready', 'READY');
-                    }
-                }, 1500);
+            function setPadPitch(padIndex, semitones) {
+                currentPitches[padIndex] = Math.max(-12, Math.min(12, semitones));
+                updatePadsDisplay();
+                saveCurrentPreset();
             }
 
-            // ============ SAMPLE LIST UI ============
+            function changeSelectedPadPitch(delta) {
+                if (selectedPadIndex === null) return;
+                setPadPitch(selectedPadIndex, currentPitches[selectedPadIndex] + delta);
+                updatePadPitchUI();
+            }
+
+            // ============ GLOBAL PITCH ============
+            function shiftGlobalPitch(semitones) {
+                globalPitchShift = Math.max(-12, Math.min(12, globalPitchShift + semitones));
+                globalPitchUpBtn.style.color = globalPitchShift > 0 ? '#f1c40f' : '#aaa';
+                globalPitchDownBtn.style.color = globalPitchShift < 0 ? '#f1c40f' : '#aaa';
+                setStatus('ready', 'GLOBAL: ' + (globalPitchShift >= 0 ? '+' : '') + globalPitchShift);
+                setTimeout(() => { if (statusLabel.textContent.startsWith('GLOBAL')) setStatus('ready', 'READY'); }, 1500);
+            }
+
+            // ============ SAMPLE LIST ============
             function renderSampleList(filter = '') {
                 const f = filter.toLowerCase();
                 sampleListEl.innerHTML = sampleList
                     .filter(s => s.name.toLowerCase().includes(f))
                     .map(s => {
-                        const isCustom = s.type === 'custom';
-                        const cls = 'sample-item' + (isCustom ? ' custom' : '') + (s.index === selectedSampleIndex ? ' selected' : '');
-                        return '<div class="' + cls + '" data-sample="' + s.index + '" data-dbid="' + (s.dbId || '') + '">' + s.name + '</div>';
+                        const cls = 'sample-item' + (s.type === 'custom' ? ' custom' : '') + (s.index === selectedSampleIndex ? ' selected' : '');
+                        return '<div class="' + cls + '" data-sample="' + s.index + '">' + s.name + '</div>';
                     }).join('');
-
                 sampleListEl.querySelectorAll('.sample-item').forEach(item => {
                     item.addEventListener('click', () => {
                         selectedSampleIndex = parseInt(item.dataset.sample);
@@ -992,10 +1011,14 @@
                 if (sampleSelectMode) {
                     editMode = false;
                     editBtn.classList.remove('active');
+                    selectedPadIndex = null;
+                    document.querySelectorAll('.pad.selected-pad').forEach(p => p.classList.remove('selected-pad'));
                     renderSampleList();
-                    setStatus('selecting', 'SELECT SAMPLE');
+                    updatePadPitchUI();
+                    setStatus('selecting', 'SELECT PAD');
                 } else {
                     selectedSampleIndex = null;
+                    selectedPadIndex = null;
                     document.querySelectorAll('.pad.selected-pad').forEach(p => p.classList.remove('selected-pad'));
                     setStatus('ready', 'READY');
                 }
@@ -1004,112 +1027,79 @@
 
             // ============ FILE UPLOAD ============
             uploadSampleBtn.addEventListener('click', () => fileInput.click());
-
             fileInput.addEventListener('change', async (e) => {
                 const files = Array.from(e.target.files);
-                if (files.length === 0) return;
+                if (!files.length) return;
                 if (!audioCtx) initAudio();
-
                 for (const file of files) {
                     try {
-                        const arrayBuffer = await file.arrayBuffer();
-                        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                        const buf = await audioCtx.decodeAudioData(await file.arrayBuffer());
                         const name = file.name.replace(/\.[^/.]+$/, '').substring(0, 15).toUpperCase();
-
-                        const dbId = await saveSampleToDB(name, audioBuffer);
-                        customSamples.push({ id: dbId, name: name, buffer: audioBuffer });
-
-                        if (sampleSelectMode) {
-                            selectedSampleIndex = 16 + customSamples.length - 1;
-                        }
-                    } catch(err) {
-                        console.error('Failed to load sample:', file.name, err);
-                        alert('Ошибка загрузки: ' + file.name + '\nПоддерживаются WAV, MP3, OGG');
-                    }
+                        const dbId = await saveSampleToDB(name, buf);
+                        customSamples.push({ id: dbId, name, buffer: buf });
+                    } catch(err) { alert('Ошибка: ' + file.name); }
                 }
-
-                buildSampleList();
-                renderSampleList(sampleSearch.value);
-                updatePadsDisplay();
-                saveCurrentPreset();
+                buildSampleList(); renderSampleList(sampleSearch.value); updatePadsDisplay(); saveCurrentPreset();
                 fileInput.value = '';
             });
 
-            // Назначить семпл на пэд
             assignSampleBtn.addEventListener('click', () => {
-                if (selectedSampleIndex === null) return;
-                const targetPad = document.querySelector('.pad.selected-pad');
-                if (targetPad) {
-                    const padIndex = parseInt(targetPad.dataset.pad);
-                    currentLayout[padIndex] = selectedSampleIndex;
-                    targetPad.classList.remove('selected-pad');
-                    updatePadsDisplay();
-                    saveCurrentPreset();
-                    selectedSampleIndex = null;
-                    renderSampleList(sampleSearch.value);
-                }
+                if (selectedSampleIndex === null || selectedPadIndex === null) return;
+                currentLayout[selectedPadIndex] = selectedSampleIndex;
+                const pad = document.querySelector('.pad.selected-pad');
+                if (pad) pad.classList.remove('selected-pad');
+                selectedSampleIndex = null;
+                updatePadsDisplay();
+                saveCurrentPreset();
+                renderSampleList(sampleSearch.value);
             });
 
-            // Удалить кастомный семпл
             deleteSampleBtn.addEventListener('click', async () => {
                 if (selectedSampleIndex === null || selectedSampleIndex < 16) return;
                 const ci = selectedSampleIndex - 16;
-                const sample = customSamples[ci];
-                if (!sample) return;
-
-                if (!confirm('Удалить семпл "' + sample.name + '" навсегда?')) return;
-
-                await deleteSampleFromDB(sample.id);
+                if (!customSamples[ci]) return;
+                if (!confirm('Удалить "' + customSamples[ci].name + '"?')) return;
+                await deleteSampleFromDB(customSamples[ci].id);
                 customSamples.splice(ci, 1);
-
-                // Обновить лейаут — заменить удалённый семпл на KICK 1
                 for (let i = 0; i < currentLayout.length; i++) {
-                    if (currentLayout[i] === selectedSampleIndex) {
-                        currentLayout[i] = 0;
-                    } else if (currentLayout[i] > selectedSampleIndex) {
-                        currentLayout[i]--;
-                    }
+                    if (currentLayout[i] === selectedSampleIndex) currentLayout[i] = 0;
+                    else if (currentLayout[i] > selectedSampleIndex) currentLayout[i]--;
                 }
-
                 selectedSampleIndex = null;
-                buildSampleList();
-                renderSampleList(sampleSearch.value);
-                updatePadsDisplay();
-                saveCurrentPreset();
+                buildSampleList(); renderSampleList(sampleSearch.value); updatePadsDisplay(); saveCurrentPreset();
             });
 
             sampleSearch.addEventListener('input', () => renderSampleList(sampleSearch.value));
 
-            // ============ TOUCH HANDLING ============
+            // Пич-контрол для выбранного пэда
+            padPitchUp.addEventListener('click', () => changeSelectedPadPitch(1));
+            padPitchDown.addEventListener('click', () => changeSelectedPadPitch(-1));
+
+            // ============ TOUCH ============
             function getPadAtPoint(x, y) {
                 const el = document.elementFromPoint(x, y);
-                if (el) {
-                    const pad = el.closest('.pad');
-                    if (pad) return pad;
-                }
-                return null;
+                return el ? el.closest('.pad') : null;
             }
 
-            let longPressTimer = null;
-            let longPressActive = false;
+            let longPressTimer = null, longPressActive = false;
 
             padsGrid.addEventListener('touchstart', (e) => {
                 if (editMode || sampleSelectMode) {
                     e.preventDefault();
-                    const touch = e.changedTouches[0];
-                    const pad = getPadAtPoint(touch.clientX, touch.clientY);
+                    const pad = getPadAtPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+                    if (!pad) return;
 
-                    if (sampleSelectMode && pad) {
+                    if (sampleSelectMode) {
                         document.querySelectorAll('.pad.selected-pad').forEach(p => p.classList.remove('selected-pad'));
                         pad.classList.add('selected-pad');
+                        selectedPadIndex = parseInt(pad.dataset.pad);
+                        updatePadPitchUI();
                         return;
                     }
-
-                    if (editMode && pad) {
+                    if (editMode) {
                         dragPadIndex = parseInt(pad.dataset.pad);
                         longPressTimer = setTimeout(() => {
-                            longPressActive = true;
-                            pad.classList.add('dragging');
+                            longPressActive = true; pad.classList.add('dragging');
                             if (navigator.vibrate) navigator.vibrate(10);
                         }, 400);
                         return;
@@ -1117,7 +1107,6 @@
                     return;
                 }
 
-                // Обычный режим
                 e.preventDefault();
                 if (!audioCtx) initAudio();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -1126,11 +1115,10 @@
                     if (activeTouches.has(touch.identifier)) continue;
                     const pad = getPadAtPoint(touch.clientX, touch.clientY);
                     if (pad) {
-                        const padIndex = parseInt(pad.dataset.pad);
-                        const sampleIndex = currentLayout[padIndex];
-                        activeTouches.set(touch.identifier, padIndex);
+                        const idx = parseInt(pad.dataset.pad);
+                        activeTouches.set(touch.identifier, idx);
                         pad.classList.add('active');
-                        playPad(sampleIndex);
+                        playPad(idx);
                     }
                 }
             }, { passive: false });
@@ -1138,12 +1126,9 @@
             padsGrid.addEventListener('touchmove', (e) => {
                 if (editMode && longPressActive && dragPadIndex !== null) {
                     e.preventDefault();
-                    const touch = e.changedTouches[0];
-                    const pad = getPadAtPoint(touch.clientX, touch.clientY);
+                    const pad = getPadAtPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
                     document.querySelectorAll('.pad.drag-over').forEach(p => p.classList.remove('drag-over'));
-                    if (pad && parseInt(pad.dataset.pad) !== dragPadIndex) {
-                        pad.classList.add('drag-over');
-                    }
+                    if (pad && parseInt(pad.dataset.pad) !== dragPadIndex) pad.classList.add('drag-over');
                 }
             }, { passive: false });
 
@@ -1151,237 +1136,77 @@
                 if (editMode || sampleSelectMode) {
                     if (longPressTimer) clearTimeout(longPressTimer);
                     if (longPressActive && dragPadIndex !== null) {
-                        const touch = e.changedTouches[0];
-                        const pad = getPadAtPoint(touch.clientX, touch.clientY);
-                        document.querySelectorAll('.pad.dragging, .pad.drag-over').forEach(p => {
-                            p.classList.remove('dragging', 'drag-over');
-                        });
-                        if (pad) {
-                            const targetIndex = parseInt(pad.dataset.pad);
-                            if (targetIndex !== dragPadIndex) swapPads(dragPadIndex, targetIndex);
-                        }
+                        const pad = getPadAtPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+                        document.querySelectorAll('.pad.dragging, .pad.drag-over').forEach(p => p.classList.remove('dragging', 'drag-over'));
+                        if (pad) { const t = parseInt(pad.dataset.pad); if (t !== dragPadIndex) swapPads(dragPadIndex, t); }
                     }
-                    longPressActive = false;
-                    dragPadIndex = null;
+                    longPressActive = false; dragPadIndex = null;
                     return;
                 }
-
                 for (const touch of e.changedTouches) {
                     if (activeTouches.has(touch.identifier)) {
-                        const padIndex = activeTouches.get(touch.identifier);
+                        deactivatePad(activeTouches.get(touch.identifier));
                         activeTouches.delete(touch.identifier);
-                        deactivatePad(padIndex);
                     }
                 }
             });
 
             document.addEventListener('touchcancel', () => {
                 if (longPressTimer) clearTimeout(longPressTimer);
-                longPressActive = false;
-                dragPadIndex = null;
-                document.querySelectorAll('.pad.dragging, .pad.drag-over').forEach(p => {
-                    p.classList.remove('dragging', 'drag-over');
-                });
-                for (const [id, padIndex] of activeTouches) {
-                    deactivatePad(padIndex);
-                }
+                longPressActive = false; dragPadIndex = null;
+                document.querySelectorAll('.pad.dragging, .pad.drag-over').forEach(p => p.classList.remove('dragging', 'drag-over'));
+                activeTouches.forEach((idx) => deactivatePad(idx));
                 activeTouches.clear();
             });
 
-            function deactivatePad(padIndex) {
-                for (const [id, idx] of activeTouches) {
-                    if (idx === padIndex) return;
-                }
-                const pad = document.querySelector('.pad[data-pad="' + padIndex + '"]');
+            function deactivatePad(idx) {
+                for (const [id, i] of activeTouches) if (i === idx) return;
+                const pad = padsGrid.querySelector('.pad[data-pad="' + idx + '"]');
                 if (pad) pad.classList.remove('active');
             }
 
             document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-            // ============ AUDIO GENERATION ============
+            // ============ AUDIO ============
             function initAudio() {
                 if (audioCtx) return;
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 masterGain = audioCtx.createGain();
                 masterGain.gain.value = volume;
                 masterGain.connect(audioCtx.destination);
-
                 sampleBuffers = [];
-                sampleBuffers[0] = genKick(0.4, 150, 30, 15);
-                sampleBuffers[1] = genKick(0.35, 120, 25, 12);
-                sampleBuffers[2] = genSnare(0.3, 180, 20, 0.5, 0.5);
-                sampleBuffers[3] = genSnare(0.25, 200, 25, 0.4, 0.6);
-                sampleBuffers[4] = genHH(0.08, 60, 0.5);
-                sampleBuffers[5] = genHH(0.25, 10, 0.3);
-                sampleBuffers[6] = genTom(300, 0.35, 12);
-                sampleBuffers[7] = genTom(200, 0.35, 12);
-                sampleBuffers[8] = genTom(120, 0.4, 10);
-                sampleBuffers[9] = genClap(0.25);
-                sampleBuffers[10] = genRim(0.15);
-                sampleBuffers[11] = genShaker(0.2);
-                sampleBuffers[12] = genCrash(0.8);
-                sampleBuffers[13] = genRide(0.6);
-                sampleBuffers[14] = genPerc(0.15, 800, 400);
-                sampleBuffers[15] = genPerc(0.1, 1200, 600);
+                sampleBuffers[0] = gK(0.4,150,30,15); sampleBuffers[1] = gK(0.35,120,25,12);
+                sampleBuffers[2] = gS(0.3,180,20,0.5,0.5); sampleBuffers[3] = gS(0.25,200,25,0.4,0.6);
+                sampleBuffers[4] = gH(0.08,60,0.5); sampleBuffers[5] = gH(0.25,10,0.3);
+                sampleBuffers[6] = gT(300,0.35,12); sampleBuffers[7] = gT(200,0.35,12);
+                sampleBuffers[8] = gT(120,0.4,10); sampleBuffers[9] = gC(0.25);
+                sampleBuffers[10] = gR(0.15); sampleBuffers[11] = gSh(0.2);
+                sampleBuffers[12] = gCr(0.8); sampleBuffers[13] = gRd(0.6);
+                sampleBuffers[14] = gP(0.15,800,400); sampleBuffers[15] = gP(0.1,1200,600);
             }
 
-            function genKick(l, fS, fE, d) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    const p = i / len;
-                    const freq = fS * Math.pow(fE / fS, p);
-                    const env = Math.exp(-t * d);
-                    const click = t < 0.005 ? (1 - t / 0.005) * 0.4 : 0;
-                    data[i] = Math.sin(2 * Math.PI * freq * t) * env * 0.8 + click;
-                }
-                return buf;
-            }
+            function gK(l,fS,fE,d){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){const t=i/sr;data[i]=Math.sin(2*Math.PI*fS*Math.pow(fE/fS,i/len)*t)*Math.exp(-t*d)*0.8+(t<0.005?(1-t/0.005)*0.4:0);}return buf;}
+            function gS(l,f,d,tM,nM){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){data[i]=(Math.sin(2*Math.PI*f*i/sr)*tM+(Math.random()*2-1)*nM)*Math.exp(-i/sr*d)*0.7;}return buf;}
+            function gH(l,d,h){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){let s=(Math.random()*2-1);if(i>0)s-=data[i-1]*h;data[i]=s*Math.exp(-i/sr*d)*0.4;}return buf;}
+            function gT(fB,l,d){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){data[i]=Math.sin(2*Math.PI*fB*Math.pow(0.5,i/len)*i/sr)*Math.exp(-i/sr*d)*0.6;}return buf;}
+            function gC(l){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){const t=i/sr;data[i]=(Math.random()*2-1)*(Math.exp(-t*25)*0.7+(t>0.02&&t<0.04?0.35:0)*Math.exp(-(t-0.03)*40))*0.5;}return buf;}
+            function gR(l){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){data[i]=(Math.sin(2*Math.PI*1000*i/sr)*0.3+(Math.random()*2-1)*0.7)*Math.exp(-i/sr*40)*0.5;}return buf;}
+            function gSh(l){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){data[i]=(Math.random()*2-1)*Math.exp(-i/sr*15)*(0.7+0.3*Math.sin(i/sr*80))*0.35;}return buf;}
+            function gCr(l){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){let s=(Math.random()*2-1);if(i>0)s-=data[i-1]*0.2;data[i]=s*Math.exp(-i/sr*4)*0.5;}return buf;}
+            function gRd(l){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){let s=(Math.random()*2-1);if(i>0)s-=data[i-1]*0.3;data[i]=(Math.sin(2*Math.PI*800*i/sr)*0.4+s*0.6)*Math.exp(-i/sr*6)*0.45;}return buf;}
+            function gP(l,fS,fE){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){data[i]=Math.sin(2*Math.PI*fS*Math.pow(fE/fS,i/len)*i/sr)*Math.exp(-i/sr*30)*0.5;}return buf;}
 
-            function genSnare(l, f, d, tM, nM) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    const env = Math.exp(-t * d);
-                    const tone = Math.sin(2 * Math.PI * f * t) * tM;
-                    const noise = (Math.random() * 2 - 1) * nM;
-                    data[i] = (tone + noise) * env * 0.7;
-                }
-                return buf;
-            }
-
-            function genHH(l, d, h) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    const env = Math.exp(-t * d);
-                    let s = (Math.random() * 2 - 1);
-                    if (i > 0) s = s - data[i - 1] * h;
-                    data[i] = s * env * 0.4;
-                }
-                return buf;
-            }
-
-            function genTom(fB, l, d) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    const p = i / len;
-                    const freq = fB * Math.pow(0.5, p);
-                    const env = Math.exp(-t * d);
-                    data[i] = Math.sin(2 * Math.PI * freq * t) * env * 0.6;
-                }
-                return buf;
-            }
-
-            function genClap(l) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    const env = Math.exp(-t * 25) * 0.7 + (t > 0.02 && t < 0.04 ? 0.35 : 0) * Math.exp(-(t - 0.03) * 40);
-                    data[i] = (Math.random() * 2 - 1) * env * 0.5;
-                }
-                return buf;
-            }
-
-            function genRim(l) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    const env = Math.exp(-t * 40);
-                    const tone = Math.sin(2 * Math.PI * 1000 * t) * 0.3;
-                    const noise = (Math.random() * 2 - 1) * 0.7;
-                    data[i] = (tone + noise) * env * 0.5;
-                }
-                return buf;
-            }
-
-            function genShaker(l) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    const env = Math.exp(-t * 15) * (0.7 + 0.3 * Math.sin(t * 80));
-                    data[i] = (Math.random() * 2 - 1) * env * 0.35;
-                }
-                return buf;
-            }
-
-            function genCrash(l) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    const env = Math.exp(-t * 4);
-                    let s = (Math.random() * 2 - 1);
-                    if (i > 0) s = s - data[i - 1] * 0.2;
-                    data[i] = s * env * 0.5;
-                }
-                return buf;
-            }
-
-            function genRide(l) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    const env = Math.exp(-t * 6);
-                    const tone = Math.sin(2 * Math.PI * 800 * t) * 0.4;
-                    let noise = (Math.random() * 2 - 1);
-                    if (i > 0) noise = noise - data[i - 1] * 0.3;
-                    data[i] = (tone + noise * 0.6) * env * 0.45;
-                }
-                return buf;
-            }
-
-            function genPerc(l, fS, fE) {
-                const sr = audioCtx.sampleRate;
-                const len = Math.floor(sr * l);
-                const buf = audioCtx.createBuffer(1, len, sr);
-                const data = buf.getChannelData(0);
-                for (let i = 0; i < len; i++) {
-                    const t = i / sr;
-                    const p = i / len;
-                    const freq = fS * Math.pow(fE / fS, p);
-                    const env = Math.exp(-t * 30);
-                    data[i] = Math.sin(2 * Math.PI * freq * t) * env * 0.5;
-                }
-                return buf;
-            }
-
-            // ============ PLAYBACK ============
-            function playPad(sampleIndex, time) {
+            function playPad(padIndex, time) {
                 if (!audioCtx) initAudio();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
 
+                const sampleIndex = currentLayout[padIndex];
+                const padPitch = currentPitches[padIndex] || 0;
+                const totalPitch = padPitch + globalPitchShift;
+
                 let buffer;
                 if (sampleIndex >= 16) {
-                    const ci = sampleIndex - 16;
-                    buffer = customSamples[ci] ? customSamples[ci].buffer : null;
+                    buffer = customSamples[sampleIndex - 16]?.buffer;
                 } else {
                     buffer = sampleBuffers[sampleIndex];
                 }
@@ -1389,157 +1214,112 @@
 
                 const source = audioCtx.createBufferSource();
                 source.buffer = buffer;
-                source.playbackRate.value = Math.pow(2, pitchShift / 12);
+                source.playbackRate.value = Math.pow(2, totalPitch / 12);
                 source.connect(masterGain);
                 source.start(time || 0);
 
                 if (isRecording) {
-                    const eventTime = (time || audioCtx.currentTime) - recordingStartTime;
-                    recordedEvents.push({ sampleIndex, pitchShift, time: eventTime });
+                    recordedEvents.push({
+                        padIndex, sampleIndex,
+                        padPitch, globalPitchShift,
+                        time: (time || audioCtx.currentTime) - recordingStartTime
+                    });
                 }
             }
 
-            // ============ RECORDING ============
-            function setStatus(mode, label) {
-                statusDot.className = 'status-dot ' + mode;
-                statusLabel.textContent = label || mode.toUpperCase();
-            }
+            // ============ RECORDING / PLAYBACK ============
+            function setStatus(m, l) { statusDot.className = 'status-dot ' + m; statusLabel.textContent = l || m.toUpperCase(); }
 
             recordBtn.addEventListener('click', () => {
                 if (editMode || sampleSelectMode) return;
                 if (!audioCtx) initAudio();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
-
                 if (!isRecording) {
-                    isRecording = true;
-                    recordedEvents = [];
-                    recordingStartTime = audioCtx.currentTime;
-                    recordBtn.classList.add('recording');
-                    recordBtn.textContent = '⏺ REC ●';
-                    playBtn.disabled = false;
-                    stopBtn.disabled = true;
-                    setStatus('recording');
-                    if (isPlaying) stopPlayback();
+                    isRecording = true; recordedEvents = []; recordingStartTime = audioCtx.currentTime;
+                    recordBtn.classList.add('recording'); recordBtn.textContent = '⏺ REC ●';
+                    playBtn.disabled = false; stopBtn.disabled = true;
+                    setStatus('recording'); if (isPlaying) stopPlayback();
                 } else {
-                    isRecording = false;
-                    recordBtn.classList.remove('recording');
-                    recordBtn.textContent = '⏺ REC';
-                    setStatus('ready');
-                    if (recordedEvents.length === 0) playBtn.disabled = true;
+                    isRecording = false; recordBtn.classList.remove('recording'); recordBtn.textContent = '⏺ REC';
+                    setStatus('ready'); if (!recordedEvents.length) playBtn.disabled = true;
                 }
             });
 
             function startPlayback() {
-                if (recordedEvents.length === 0) return;
-                isPlaying = true;
-                playBtn.disabled = true;
-                stopBtn.disabled = false;
-                recordBtn.disabled = true;
-                clearBtn.disabled = true;
-                setStatus('playing');
-
+                if (!recordedEvents.length) return;
+                isPlaying = true; playBtn.disabled = true; stopBtn.disabled = false;
+                recordBtn.disabled = true; clearBtn.disabled = true; setStatus('playing');
                 const now = audioCtx.currentTime;
-                const savedPitch = pitchShift;
+                const savedPitches = [...currentPitches];
+                const savedGlobal = globalPitchShift;
                 recordedEvents.forEach(e => {
-                    pitchShift = e.pitchShift || 0;
-                    playPad(e.sampleIndex, now + e.time);
+                    if (e.padIndex !== undefined) {
+                        currentPitches[e.padIndex] = e.padPitch || 0;
+                    }
+                    globalPitchShift = e.globalPitchShift || 0;
+                    if (e.padIndex !== undefined) {
+                        playPad(e.padIndex, now + e.time);
+                    }
                 });
-                pitchShift = savedPitch;
-
+                for (let i = 0; i < 16; i++) currentPitches[i] = savedPitches[i];
+                globalPitchShift = savedGlobal;
                 const last = Math.max(...recordedEvents.map(e => e.time));
-                playbackTimeout = setTimeout(() => stopPlayback(), (last + 0.5) * 1000);
+                playbackTimeout = setTimeout(stopPlayback, (last + 0.5) * 1000);
             }
 
             function stopPlayback() {
-                isPlaying = false;
-                playBtn.disabled = false;
-                stopBtn.disabled = true;
-                recordBtn.disabled = false;
-                clearBtn.disabled = false;
-                setStatus('ready');
+                isPlaying = false; playBtn.disabled = false; stopBtn.disabled = true;
+                recordBtn.disabled = false; clearBtn.disabled = false; setStatus('ready');
                 if (playbackTimeout) { clearTimeout(playbackTimeout); playbackTimeout = null; }
             }
 
             playBtn.addEventListener('click', () => {
                 if (editMode || sampleSelectMode) return;
                 if (!audioCtx) initAudio();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
                 startPlayback();
             });
             stopBtn.addEventListener('click', stopPlayback);
             clearBtn.addEventListener('click', () => {
-                recordedEvents = [];
-                playBtn.disabled = true;
-                stopBtn.disabled = true;
-                if (isPlaying) stopPlayback();
-                setStatus('ready');
+                recordedEvents = []; playBtn.disabled = true; stopBtn.disabled = true;
+                if (isPlaying) stopPlayback(); setStatus('ready');
             });
 
             // ============ VOLUME & BPM ============
             volumeSlider.addEventListener('input', () => {
-                volume = parseInt(volumeSlider.value) / 100;
-                volNum.textContent = volumeSlider.value;
+                volume = parseInt(volumeSlider.value) / 100; volNum.textContent = volumeSlider.value;
                 if (masterGain) masterGain.gain.setValueAtTime(volume, audioCtx.currentTime);
             });
 
             function updateBPM() { bpmValue.textContent = bpm; }
-            let bpmInterval = null;
-            function startBPMChange(d) {
-                bpm = Math.max(40, Math.min(240, bpm + d)); updateBPM();
-                bpmInterval = setInterval(() => { bpm = Math.max(40, Math.min(240, bpm + d)); updateBPM(); }, 80);
-            }
-            function stopBPMChange() { if (bpmInterval) { clearInterval(bpmInterval); bpmInterval = null; } }
-            bpmDown.addEventListener('pointerdown', () => startBPMChange(-1));
-            bpmDown.addEventListener('pointerup', stopBPMChange);
-            bpmDown.addEventListener('pointerleave', stopBPMChange);
-            bpmUp.addEventListener('pointerdown', () => startBPMChange(1));
-            bpmUp.addEventListener('pointerup', stopBPMChange);
-            bpmUp.addEventListener('pointerleave', stopBPMChange);
+            let bpmInterval;
+            bpmDown.addEventListener('pointerdown', () => { bpm=Math.max(40,bpm-1);updateBPM();bpmInterval=setInterval(()=>{bpm=Math.max(40,bpm-1);updateBPM();},80); });
+            bpmDown.addEventListener('pointerup', () => clearInterval(bpmInterval));
+            bpmUp.addEventListener('pointerdown', () => { bpm=Math.min(240,bpm+1);updateBPM();bpmInterval=setInterval(()=>{bpm=Math.min(240,bpm+1);updateBPM();},80); });
+            bpmUp.addEventListener('pointerup', () => clearInterval(bpmInterval));
 
             // ============ BUTTONS ============
             editBtn.addEventListener('click', () => {
                 if (sampleSelectMode) toggleSampleList();
-                editMode = !editMode;
-                editBtn.classList.toggle('active', editMode);
-                setStatus(editMode ? 'editing' : 'ready', editMode ? 'EDIT MODE' : 'READY');
-                updatePadsDisplay();
+                editMode = !editMode; editBtn.classList.toggle('active', editMode);
+                setStatus(editMode ? 'editing' : 'ready', editMode ? 'EDIT' : 'READY'); updatePadsDisplay();
             });
-
             sampleBtn.addEventListener('click', toggleSampleList);
+            globalPitchUpBtn.addEventListener('click', () => shiftGlobalPitch(1));
+            globalPitchDownBtn.addEventListener('click', () => shiftGlobalPitch(-1));
 
-            pitchUpBtn.addEventListener('click', () => shiftPitch(1));
-            pitchDownBtn.addEventListener('click', () => shiftPitch(-1));
-            pitchUpSampleBtn.addEventListener('click', () => shiftPitch(1));
-            pitchDownSampleBtn.addEventListener('click', () => shiftPitch(-1));
-
-            // Навигация по банкам стрелками
             bankPrev.addEventListener('click', async () => {
-                const newPreset = (currentPreset - 1 + 4) % 4;
-                await loadPreset(newPreset);
-                recordedEvents = [];
-                playBtn.disabled = true;
-                stopBtn.disabled = true;
+                await loadPreset((currentPreset - 1 + 4) % 4);
+                recordedEvents = []; playBtn.disabled = true; stopBtn.disabled = true;
                 if (isPlaying) stopPlayback();
-                if (isRecording) {
-                    isRecording = false;
-                    recordBtn.classList.remove('recording');
-                    recordBtn.textContent = '⏺ REC';
-                }
+                if (isRecording) { isRecording = false; recordBtn.classList.remove('recording'); recordBtn.textContent = '⏺ REC'; }
                 setStatus('ready');
             });
 
             bankNext.addEventListener('click', async () => {
-                const newPreset = (currentPreset + 1) % 4;
-                await loadPreset(newPreset);
-                recordedEvents = [];
-                playBtn.disabled = true;
-                stopBtn.disabled = true;
+                await loadPreset((currentPreset + 1) % 4);
+                recordedEvents = []; playBtn.disabled = true; stopBtn.disabled = true;
                 if (isPlaying) stopPlayback();
-                if (isRecording) {
-                    isRecording = false;
-                    recordBtn.classList.remove('recording');
-                    recordBtn.textContent = '⏺ REC';
-                }
+                if (isRecording) { isRecording = false; recordBtn.classList.remove('recording'); recordBtn.textContent = '⏺ REC'; }
                 setStatus('ready');
             });
 
@@ -1548,56 +1328,47 @@
                 if (!btn) return;
                 if (btn === savePresetBtn) {
                     await saveCurrentPreset();
-                    btn.style.color = '#2ecc71';
-                    setTimeout(() => btn.style.color = '#555', 500);
+                    btn.style.color = '#2ecc71'; setTimeout(() => btn.style.color = '#555', 500);
                     return;
                 }
                 await loadPreset(parseInt(btn.dataset.preset));
-                recordedEvents = [];
-                playBtn.disabled = true;
-                stopBtn.disabled = true;
+                recordedEvents = []; playBtn.disabled = true; stopBtn.disabled = true;
                 if (isPlaying) stopPlayback();
-                if (isRecording) {
-                    isRecording = false;
-                    recordBtn.classList.remove('recording');
-                    recordBtn.textContent = '⏺ REC';
-                }
+                if (isRecording) { isRecording = false; recordBtn.classList.remove('recording'); recordBtn.textContent = '⏺ REC'; }
                 setStatus('ready');
             });
 
             // ============ INIT ============
             async function init() {
-                await openDB();
-                initAudio();
-
+                await openDB(); initAudio();
                 const savedSamples = await loadAllSamplesFromDB();
                 customSamples = savedSamples;
-
                 try {
-                    const saved = localStorage.getItem('beatbox64_presets');
-                    if (saved) presets = JSON.parse(saved);
+                    const saved = localStorage.getItem('beatbox64_presets_v2');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        for (let i = 0; i < 4; i++) {
+                            if (parsed[i]) presets[i] = parsed[i];
+                        }
+                    }
                 } catch(e) {}
-
                 const dbLayouts = await loadAllLayoutsFromDB();
                 for (const key in dbLayouts) {
-                    presets[parseInt(key)] = dbLayouts[key];
+                    const idx = parseInt(key);
+                    if (dbLayouts[idx]) {
+                        presets[idx] = {
+                            layout: dbLayouts[idx].layout || [...defaultLayout],
+                            pitches: dbLayouts[idx].pitches || [...defaultPitches]
+                        };
+                    }
                 }
-
-                currentLayout = [...presets[0]];
-                buildSampleList();
-                updatePadsDisplay();
-                updateBPM();
-                updatePresetButtons();
-                setStatus('ready');
-
-                console.log('🥁 BeatBox 64 ready! ' + customSamples.length + ' custom samples loaded.');
+                currentLayout = [...presets[0].layout];
+                currentPitches = [...presets[0].pitches];
+                buildSampleList(); updatePadsDisplay(); updateBPM(); updatePresetButtons(); setStatus('ready');
+                console.log('🥁 BeatBox 64 ready! Individual pad pitch, ' + customSamples.length + ' samples.');
             }
-
             init();
-
-            document.addEventListener('touchstart', () => {
-                if (!audioCtx) initAudio();
-            }, { once: true });
+            document.addEventListener('touchstart', () => { if (!audioCtx) initAudio(); }, { once: true });
         })();
     </script>
 </body>
