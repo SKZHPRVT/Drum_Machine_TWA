@@ -229,9 +229,13 @@
             bottom: 2px;
             right: 4px;
             font-size: 6px;
-            color: rgba(255,255,255,0.5);
+            color: rgba(255,255,255,0.3);
             z-index: 1;
             pointer-events: none;
+        }
+
+        .pad .pad-pitch.has-pitch {
+            color: #f1c40f;
         }
 
         .pad .custom-indicator {
@@ -368,7 +372,6 @@
             color: #00c8ff;
         }
 
-        /* Пич-контрол для выбранного пэда */
         .pad-pitch-control {
             display: flex;
             align-items: center;
@@ -441,7 +444,6 @@
             color: #ff4757;
         }
 
-        /* Пресеты */
         .preset-bar {
             display: flex;
             gap: 4px;
@@ -623,7 +625,6 @@
 </head>
 <body>
     <div class="container">
-        <!-- Хэдер -->
         <div class="header">
             <span class="logo">🥁 BeatBox 64</span>
             <div class="header-btns">
@@ -640,14 +641,12 @@
             </div>
         </div>
 
-        <!-- Навигация по банкам -->
         <div class="bank-nav">
             <button class="bank-arrow" id="bankPrev">◀</button>
             <span class="bank-indicator" id="bankIndicator">BANK A</span>
             <button class="bank-arrow" id="bankNext">▶</button>
         </div>
 
-        <!-- Пресеты -->
         <div class="preset-bar" id="presetBar">
             <button class="preset-btn active-preset" data-preset="0">A</button>
             <button class="preset-btn" data-preset="1">B</button>
@@ -656,13 +655,12 @@
             <button class="preset-btn preset-save" id="savePresetBtn">+</button>
         </div>
 
-        <!-- Список семплов + питч для пэда -->
         <div class="sample-list-container" id="sampleListContainer">
             <input type="text" class="sample-search" id="sampleSearch" placeholder="🔍 Поиск семплов...">
             <div class="pad-pitch-control" id="padPitchControl">
                 <span class="pad-pitch-label">🎵 Pitch:</span>
                 <button class="pad-pitch-btn" id="padPitchDown">−</button>
-                <span class="pad-pitch-value" id="padPitchValue">0</span>
+                <span class="pad-pitch-value" id="padPitchValue">—</span>
                 <button class="pad-pitch-btn" id="padPitchUp">+</button>
             </div>
             <div class="sample-list" id="sampleList"></div>
@@ -674,7 +672,6 @@
             <input type="file" class="hidden-file-input" id="fileInput" accept="audio/*" multiple>
         </div>
 
-        <!-- Пэды 4×4 -->
         <div class="pads-grid" id="padsGrid">
             <div class="pad pad-0" data-pad="0"><span class="pad-label">KICK 1</span><span class="pad-number">1</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
             <div class="pad pad-1" data-pad="1"><span class="pad-label">KICK 2</span><span class="pad-number">2</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
@@ -694,7 +691,6 @@
             <div class="pad pad-15" data-pad="15"><span class="pad-label">PERC 2</span><span class="pad-number">16</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
         </div>
 
-        <!-- Управление -->
         <div class="controls-row">
             <div class="vol-group">
                 <span class="vol-icon">🔈</span>
@@ -725,7 +721,7 @@
             tg.expand();
 
             // ============ INDEXEDDB ============
-            const DB_NAME = 'BeatBox64DBv2';
+            const DB_NAME = 'BeatBox64DBv3';
             const DB_VERSION = 1;
             let db = null;
 
@@ -909,7 +905,7 @@
 
             async function saveCurrentPreset() {
                 presets[currentPreset] = { layout: [...currentLayout], pitches: [...currentPitches] };
-                localStorage.setItem('beatbox64_presets_v2', JSON.stringify(presets));
+                localStorage.setItem('beatbox64_presets_v3', JSON.stringify(presets));
                 await saveLayoutToDB(currentPreset, currentLayout, currentPitches);
             }
 
@@ -927,32 +923,46 @@
                 return sampleList[sampleIndex] ? sampleList[sampleIndex].name : '???';
             }
 
+            function updateSinglePad(pad) {
+                const pos = parseInt(pad.dataset.pad);
+                const si = currentLayout[pos];
+                const pitch = currentPitches[pos];
+
+                // Сохраняем класс active если он был
+                const wasActive = pad.classList.contains('active');
+
+                // Очищаем все кроме базовых
+                pad.className = 'pad';
+                pad.classList.add(getPadClass(si));
+                if (si >= 16) pad.classList.add('custom-sample');
+                if (editMode) pad.classList.add('edit-mode');
+                if (sampleSelectMode) pad.classList.add('sample-select-mode');
+                if (pos === selectedPadIndex) pad.classList.add('selected-pad');
+                if (wasActive) pad.classList.add('active');
+
+                pad.querySelector('.pad-label').textContent = getPadLabel(si);
+                pad.querySelector('.pad-number').textContent = pos + 1;
+
+                const pitchEl = pad.querySelector('.pad-pitch');
+                pitchEl.textContent = pitch !== 0 ? (pitch > 0 ? '+' : '') + pitch : '';
+                if (pitch !== 0) {
+                    pitchEl.classList.add('has-pitch');
+                } else {
+                    pitchEl.classList.remove('has-pitch');
+                }
+            }
+
             function updatePadsDisplay() {
                 buildSampleList();
                 const pads = document.querySelectorAll('.pad');
-                pads.forEach(pad => {
-                    const pos = parseInt(pad.dataset.pad);
-                    const si = currentLayout[pos];
-                    const pitch = currentPitches[pos];
-
-                    pad.className = 'pad';
-                    pad.classList.add(getPadClass(si));
-                    if (si >= 16) pad.classList.add('custom-sample');
-                    if (editMode) pad.classList.add('edit-mode');
-                    if (sampleSelectMode) pad.classList.add('sample-select-mode');
-
-                    pad.querySelector('.pad-label').textContent = getPadLabel(si);
-                    pad.querySelector('.pad-number').textContent = pos + 1;
-                    const pitchEl = pad.querySelector('.pad-pitch');
-                    pitchEl.textContent = pitch !== 0 ? (pitch > 0 ? '+' : '') + pitch : '';
-                    pitchEl.style.color = pitch !== 0 ? '#f1c40f' : 'rgba(255,255,255,0.3)';
-                });
+                pads.forEach(pad => updateSinglePad(pad));
                 updatePadPitchUI();
             }
 
             function updatePadPitchUI() {
-                if (selectedPadIndex !== null) {
-                    padPitchValue.textContent = (currentPitches[selectedPadIndex] >= 0 ? '+' : '') + currentPitches[selectedPadIndex];
+                if (selectedPadIndex !== null && currentPitches[selectedPadIndex] !== undefined) {
+                    const p = currentPitches[selectedPadIndex];
+                    padPitchValue.textContent = (p >= 0 ? '+' : '') + p;
                 } else {
                     padPitchValue.textContent = '—';
                 }
@@ -966,15 +976,17 @@
             }
 
             function setPadPitch(padIndex, semitones) {
+                if (padIndex === null || padIndex === undefined) return;
                 currentPitches[padIndex] = Math.max(-12, Math.min(12, semitones));
-                updatePadsDisplay();
+                const pad = document.querySelector('.pad[data-pad="' + padIndex + '"]');
+                if (pad) updateSinglePad(pad);
+                updatePadPitchUI();
                 saveCurrentPreset();
             }
 
             function changeSelectedPadPitch(delta) {
-                if (selectedPadIndex === null) return;
+                if (selectedPadIndex === null || selectedPadIndex === undefined) return;
                 setPadPitch(selectedPadIndex, currentPitches[selectedPadIndex] + delta);
-                updatePadPitchUI();
             }
 
             // ============ GLOBAL PITCH ============
@@ -1014,15 +1026,15 @@
                     selectedPadIndex = null;
                     document.querySelectorAll('.pad.selected-pad').forEach(p => p.classList.remove('selected-pad'));
                     renderSampleList();
-                    updatePadPitchUI();
+                    updatePadsDisplay();
                     setStatus('selecting', 'SELECT PAD');
                 } else {
                     selectedSampleIndex = null;
                     selectedPadIndex = null;
                     document.querySelectorAll('.pad.selected-pad').forEach(p => p.classList.remove('selected-pad'));
+                    updatePadsDisplay();
                     setStatus('ready', 'READY');
                 }
-                updatePadsDisplay();
             }
 
             // ============ FILE UPLOAD ============
@@ -1070,8 +1082,6 @@
             });
 
             sampleSearch.addEventListener('input', () => renderSampleList(sampleSearch.value));
-
-            // Пич-контрол для выбранного пэда
             padPitchUp.addEventListener('click', () => changeSelectedPadPitch(1));
             padPitchDown.addEventListener('click', () => changeSelectedPadPitch(-1));
 
@@ -1093,7 +1103,7 @@
                         document.querySelectorAll('.pad.selected-pad').forEach(p => p.classList.remove('selected-pad'));
                         pad.classList.add('selected-pad');
                         selectedPadIndex = parseInt(pad.dataset.pad);
-                        updatePadPitchUI();
+                        updatePadsDisplay();
                         return;
                     }
                     if (editMode) {
@@ -1145,8 +1155,10 @@
                 }
                 for (const touch of e.changedTouches) {
                     if (activeTouches.has(touch.identifier)) {
-                        deactivatePad(activeTouches.get(touch.identifier));
+                        const idx = activeTouches.get(touch.identifier);
                         activeTouches.delete(touch.identifier);
+                        const pad = document.querySelector('.pad[data-pad="' + idx + '"]');
+                        if (pad) pad.classList.remove('active');
                     }
                 }
             });
@@ -1155,15 +1167,12 @@
                 if (longPressTimer) clearTimeout(longPressTimer);
                 longPressActive = false; dragPadIndex = null;
                 document.querySelectorAll('.pad.dragging, .pad.drag-over').forEach(p => p.classList.remove('dragging', 'drag-over'));
-                activeTouches.forEach((idx) => deactivatePad(idx));
+                for (const [id, idx] of activeTouches) {
+                    const pad = document.querySelector('.pad[data-pad="' + idx + '"]');
+                    if (pad) pad.classList.remove('active');
+                }
                 activeTouches.clear();
             });
-
-            function deactivatePad(idx) {
-                for (const [id, i] of activeTouches) if (i === idx) return;
-                const pad = padsGrid.querySelector('.pad[data-pad="' + idx + '"]');
-                if (pad) pad.classList.remove('active');
-            }
 
             document.addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -1344,7 +1353,7 @@
                 const savedSamples = await loadAllSamplesFromDB();
                 customSamples = savedSamples;
                 try {
-                    const saved = localStorage.getItem('beatbox64_presets_v2');
+                    const saved = localStorage.getItem('beatbox64_presets_v3');
                     if (saved) {
                         const parsed = JSON.parse(saved);
                         for (let i = 0; i < 4; i++) {
