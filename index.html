@@ -278,8 +278,18 @@
             z-index: 1;
             pointer-events: none;
             text-align: center;
-            line-height: 1.2;
-            font-size: 9px;
+            line-height: 1.1;
+            font-size: 7px;
+            max-width: 90%;
+            word-wrap: break-word;
+            word-break: break-all;
+            overflow-wrap: break-word;
+            hyphens: auto;
+            padding: 0 2px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
         .pad .pad-number {
@@ -830,8 +840,6 @@
             let selectedSampleIndex = null;
             let selectedPadIndex = null;
             let globalPitchShift = 0;
-
-            // Отслеживание активных источников звука
             const activeSources = {};
 
             const builtinNames = [
@@ -965,7 +973,6 @@
                 const pitch = currentPitches[pos];
                 const wasActive = pad.classList.contains('active');
 
-                // Очищаем и собираем классы заново
                 pad.className = 'pad';
                 pad.classList.add(getPadClass(si));
                 if (si >= 16) {
@@ -984,11 +991,9 @@
                     pad.classList.add('active');
                 }
 
-                // Обновляем текст
                 pad.querySelector('.pad-label').textContent = getPadLabel(si);
                 pad.querySelector('.pad-number').textContent = pos + 1;
 
-                // Обновляем питч
                 const pitchEl = pad.querySelector('.pad-pitch');
                 pitchEl.textContent = pitch !== 0 ? (pitch > 0 ? '+' : '') + pitch : '';
                 if (pitch !== 0) {
@@ -1077,7 +1082,6 @@
                 }
                 sampleListEl.innerHTML = html;
 
-                // Навешиваем обработчики
                 const items = sampleListEl.querySelectorAll('.sample-item');
                 items.forEach(function(item) {
                     item.addEventListener('click', function() {
@@ -1096,7 +1100,6 @@
                     editMode = false;
                     editBtn.classList.remove('active');
                     selectedPadIndex = null;
-                    // Убираем выделение со всех пэдов
                     const selectedPads = document.querySelectorAll('.pad.selected-pad');
                     selectedPads.forEach(function(p) { p.classList.remove('selected-pad'); });
                     renderSampleList();
@@ -1171,7 +1174,6 @@
                 await deleteSampleFromDB(customSamples[ci].id);
                 customSamples.splice(ci, 1);
 
-                // Обновляем лейаут
                 for (let i = 0; i < currentLayout.length; i++) {
                     if (currentLayout[i] === selectedSampleIndex) {
                         currentLayout[i] = 0;
@@ -1219,11 +1221,9 @@
                     if (!pad) return;
 
                     if (sampleSelectMode) {
-                        // Снимаем выделение со всех
                         document.querySelectorAll('.pad.selected-pad').forEach(function(p) {
                             p.classList.remove('selected-pad');
                         });
-                        // Выделяем этот
                         pad.classList.add('selected-pad');
                         selectedPadIndex = parseInt(pad.dataset.pad);
                         updatePadsDisplay();
@@ -1242,7 +1242,6 @@
                     return;
                 }
 
-                // Обычный режим — игра
                 e.preventDefault();
                 if (!audioCtx) initAudio();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -1267,7 +1266,6 @@
                     const touch = e.changedTouches[0];
                     const pad = getPadAtPoint(touch.clientX, touch.clientY);
 
-                    // Убираем drag-over со всех
                     document.querySelectorAll('.pad.drag-over').forEach(function(p) {
                         p.classList.remove('drag-over');
                     });
@@ -1304,7 +1302,6 @@
                     return;
                 }
 
-                // Обычный режим — отпускаем пэды
                 for (let i = 0; i < e.changedTouches.length; i++) {
                     const touch = e.changedTouches[i];
                     if (activeTouches.has(touch.identifier)) {
@@ -1326,7 +1323,6 @@
                     p.classList.remove('drag-over');
                 });
 
-                // Сбрасываем все активные касания
                 activeTouches.forEach(function(idx) {
                     const pad = document.querySelector('.pad[data-pad="' + idx + '"]');
                     if (pad) pad.classList.remove('active');
@@ -1523,18 +1519,15 @@
                 return buffer;
             }
 
-            // ============ PLAYBACK (с обрывом предыдущего звука) ============
+            // ============ PLAYBACK ============
             function playPad(padIndex, time) {
                 if (!audioCtx) initAudio();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
 
-                // Останавливаем предыдущий источник этого пэда
                 if (activeSources[padIndex]) {
                     try {
                         activeSources[padIndex].stop();
-                    } catch(e) {
-                        // Уже остановлен
-                    }
+                    } catch(e) {}
                     activeSources[padIndex] = null;
                 }
 
@@ -1560,10 +1553,8 @@
                 source.connect(masterGain);
                 source.start(time || 0);
 
-                // Сохраняем источник
                 activeSources[padIndex] = source;
 
-                // Автоочистка при завершении
                 source.onended = function() {
                     if (activeSources[padIndex] === source) {
                         activeSources[padIndex] = null;
@@ -1593,7 +1584,6 @@
                 if (audioCtx.state === 'suspended') audioCtx.resume();
 
                 if (!isRecording) {
-                    // Начать запись
                     isRecording = true;
                     recordedEvents = [];
                     recordingStartTime = audioCtx.currentTime;
@@ -1604,7 +1594,6 @@
                     setStatus('recording');
                     if (isPlaying) stopPlayback();
                 } else {
-                    // Остановить запись
                     isRecording = false;
                     recordBtn.classList.remove('recording');
                     recordBtn.textContent = '⏺ REC';
@@ -1639,7 +1628,6 @@
                     }
                 });
 
-                // Восстанавливаем питчи
                 for (let i = 0; i < 16; i++) {
                     currentPitches[i] = savedPitches[i];
                 }
@@ -1662,7 +1650,6 @@
                     playbackTimeout = null;
                 }
 
-                // Останавливаем все активные источники
                 for (const key in activeSources) {
                     if (activeSources[key]) {
                         try {
@@ -1807,11 +1794,9 @@
                 await openDB();
                 initAudio();
 
-                // Загружаем кастомные семплы
                 const savedSamples = await loadAllSamplesFromDB();
                 customSamples = savedSamples;
 
-                // Загружаем пресеты из localStorage
                 try {
                     const saved = localStorage.getItem('drummachine_presets');
                     if (saved) {
@@ -1824,7 +1809,6 @@
                     }
                 } catch(e) {}
 
-                // Загружаем лейауты из IndexedDB (приоритет)
                 const dbLayouts = await loadAllLayoutsFromDB();
                 for (const key in dbLayouts) {
                     const idx = parseInt(key);
