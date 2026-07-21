@@ -1,1388 +1,707 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover, maximum-scale=1.0, minimum-scale=1.0">
-    <title>Drum Machine</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-touch-callout: none;
-        }
-
-        body {
-            background: #0d0d0d;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            padding: 6px;
-            overflow-y: auto;
-            overflow-x: hidden;
-            touch-action: manipulation;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 420px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 4px 4px 0;
-            flex-wrap: wrap;
-            gap: 4px;
-        }
-
-        .logo {
-            color: #ff4757;
-            font-size: 12px;
-            font-weight: 900;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-        }
-
-        .header-btns {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-        }
-
-        .icon-btn {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            border: 1px solid #333;
-            background: #1a1a1a;
-            color: #aaa;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.15s;
-        }
-
-        .icon-btn:active, .icon-btn.active {
-            background: #ff4757;
-            border-color: #ff4757;
-            color: #fff;
-        }
-
-        .bpm-compact {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            background: #1a1a1a;
-            border-radius: 16px;
-            padding: 4px 10px;
-        }
-
-        .bpm-btn {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            border: none;
-            background: #2a2a2a;
-            color: #aaa;
-            font-size: 16px;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-        }
-
-        .bpm-value {
-            color: #fff;
-            font-size: 14px;
-            font-weight: 700;
-            min-width: 36px;
-            text-align: center;
-            font-variant-numeric: tabular-nums;
-            font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
-        }
-
-        .bpm-label {
-            color: #666;
-            font-size: 9px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .bank-nav {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .bank-arrow {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            border: 1px solid #333;
-            background: #1a1a1a;
-            color: #aaa;
-            font-size: 16px;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.15s;
-        }
-
-        .bank-arrow:active {
-            background: #ff4757;
-            color: #fff;
-        }
-
-        .bank-indicator {
-            color: #fff;
-            font-size: 14px;
-            font-weight: 700;
-            min-width: 70px;
-            text-align: center;
-            letter-spacing: 1px;
-        }
-
-        .pads-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(4, 1fr);
-            gap: 6px;
-            aspect-ratio: 1 / 1;
-            touch-action: none;
-        }
-
-        .pad {
-            border-radius: 10px;
-            border: 1.5px solid rgba(255, 255, 255, 0.08);
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: 700;
-            font-size: 10px;
-            letter-spacing: 0.5px;
-            color: rgba(255, 255, 255, 0.85);
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-            transition: transform 0.04s ease-out, box-shadow 0.04s ease-out, border-color 0.15s, opacity 0.2s;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.1);
-        }
-
-        .pad.active {
-            transform: scale(0.92);
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6), inset 0 2px 4px rgba(0,0,0,0.3);
-            border-color: rgba(255, 255, 255, 0.4);
-        }
-
-        .pad.edit-mode {
-            border-color: rgba(255, 215, 0, 0.6);
-            border-style: dashed;
-            animation: edit-pulse 1.5s infinite;
-        }
-
-        .pad.sample-select-mode {
-            border-color: rgba(0, 180, 255, 0.7);
-            border-style: dashed;
-            animation: select-pulse 1s infinite;
-        }
-
-        .pad.selected-pad {
-            border-color: #fff !important;
-            box-shadow: 0 0 12px rgba(255,255,255,0.4) !important;
-        }
-
-        .pad.drag-over {
-            border-color: #fff !important;
-            border-style: solid !important;
-            box-shadow: 0 0 20px rgba(255,255,255,0.3) !important;
-        }
-
-        .pad.dragging {
-            opacity: 0.4;
-            transform: scale(0.95);
-        }
-
-        .pad.custom-sample {
-            border-width: 2px;
-            border-color: rgba(0, 200, 255, 0.5);
-        }
-
-        .pad .pad-pitch {
-            position: absolute;
-            bottom: 2px;
-            right: 4px;
-            font-size: 6px;
-            color: rgba(255,255,255,0.3);
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        .pad .pad-pitch.has-pitch {
-            color: #f1c40f;
-        }
-
-        .pad .custom-indicator {
-            position: absolute;
-            bottom: 3px;
-            left: 5px;
-            font-size: 7px;
-            color: rgba(0, 200, 255, 0.8);
-            z-index: 1;
-            pointer-events: none;
-            display: none;
-        }
-
-        .pad.custom-sample .custom-indicator {
-            display: block;
-        }
-
-        @keyframes edit-pulse {
-            0%, 100% { border-color: rgba(255, 215, 0, 0.4); }
-            50% { border-color: rgba(255, 215, 0, 0.9); }
-        }
-
-        @keyframes select-pulse {
-            0%, 100% { border-color: rgba(0, 180, 255, 0.4); }
-            50% { border-color: rgba(0, 180, 255, 0.9); }
-        }
-
-        .pad::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at 40% 35%, rgba(255,255,255,0.15) 0%, transparent 70%);
-            pointer-events: none;
-            border-radius: 8px;
-        }
-
-        .pad .pad-label {
-            position: relative;
-            z-index: 1;
-            pointer-events: none;
-            text-align: center;
-            line-height: 1.2;
-            font-size: 9px;
-        }
-
-        .pad .pad-number {
-            position: absolute;
-            top: 3px;
-            right: 5px;
-            font-size: 7px;
-            color: rgba(255,255,255,0.5);
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        /* Цвета */
-        .pad-0  { background: linear-gradient(135deg, #b71c1c, #f44336); }
-        .pad-1  { background: linear-gradient(135deg, #e65100, #ff9800); }
-        .pad-2  { background: linear-gradient(135deg, #f9a825, #fdd835); }
-        .pad-3  { background: linear-gradient(135deg, #33691e, #8bc34a); }
-        .pad-4  { background: linear-gradient(135deg, #0d47a1, #42a5f5); }
-        .pad-5  { background: linear-gradient(135deg, #4a148c, #ab47bc); }
-        .pad-6  { background: linear-gradient(135deg, #004d40, #26a69a); }
-        .pad-7  { background: linear-gradient(135deg, #880e4f, #ec407a); }
-        .pad-8  { background: linear-gradient(135deg, #bf360c, #ff7043); }
-        .pad-9  { background: linear-gradient(135deg, #e65100, #ffb74d); }
-        .pad-10 { background: linear-gradient(135deg, #827717, #d4e157); }
-        .pad-11 { background: linear-gradient(135deg, #1b5e20, #66bb6a); }
-        .pad-12 { background: linear-gradient(135deg, #01579b, #29b6f6); }
-        .pad-13 { background: linear-gradient(135deg, #6a1b9a, #ce93d8); }
-        .pad-14 { background: linear-gradient(135deg, #00695c, #4db6ac); }
-        .pad-15 { background: linear-gradient(135deg, #c2185b, #f06292); }
-
-        .pad-custom {
-            background: linear-gradient(135deg, #1a1a2e, #16213e) !important;
-            border-color: rgba(0, 200, 255, 0.4) !important;
-        }
-
-        .sample-list-container {
-            display: none;
-            background: #1a1a1a;
-            border-radius: 12px;
-            padding: 8px;
-            max-height: 250px;
-            overflow-y: auto;
-        }
-
-        .sample-list-container.visible {
-            display: block;
-        }
-
-        .sample-search {
-            width: 100%;
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid #333;
-            background: #0d0d0d;
-            color: #fff;
-            font-size: 12px;
-            margin-bottom: 6px;
-            outline: none;
-        }
-
-        .sample-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-        }
-
-        .sample-item {
-            padding: 6px 10px;
-            border-radius: 8px;
-            border: 1px solid #333;
-            background: #0d0d0d;
-            color: #aaa;
-            font-size: 10px;
-            cursor: pointer;
-            transition: all 0.15s;
-            white-space: nowrap;
-        }
-
-        .sample-item:active, .sample-item.selected {
-            background: #007bff;
-            border-color: #007bff;
-            color: #fff;
-        }
-
-        .sample-item.custom {
-            border-color: #00c8ff;
-            color: #00c8ff;
-        }
-
-        .pad-pitch-control {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin: 6px 0;
-            padding: 6px 10px;
-            background: #0d0d0d;
-            border-radius: 8px;
-        }
-
-        .pad-pitch-label {
-            color: #aaa;
-            font-size: 10px;
-            white-space: nowrap;
-        }
-
-        .pad-pitch-value {
-            color: #f1c40f;
-            font-size: 12px;
-            font-weight: 700;
-            min-width: 30px;
-            text-align: center;
-        }
-
-        .pad-pitch-btn {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            border: 1px solid #333;
-            background: #1a1a1a;
-            color: #f1c40f;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-        }
-
-        .sample-actions {
-            display: flex;
-            gap: 6px;
-            margin-top: 6px;
-        }
-
-        .sample-action-btn {
-            flex: 1;
-            padding: 8px;
-            border-radius: 8px;
-            border: 1px solid #333;
-            background: #0d0d0d;
-            color: #aaa;
-            font-size: 10px;
-            cursor: pointer;
-            font-weight: 700;
-        }
-
-        .sample-action-btn.upload-btn {
-            border-color: #00c8ff;
-            color: #00c8ff;
-        }
-
-        .sample-action-btn.assign-btn {
-            border-color: #2ecc71;
-            color: #2ecc71;
-        }
-
-        .sample-action-btn.delete-btn {
-            border-color: #ff4757;
-            color: #ff4757;
-        }
-
-        .preset-bar {
-            display: flex;
-            gap: 4px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .preset-btn {
-            padding: 6px 12px;
-            border-radius: 12px;
-            border: 1px solid #333;
-            background: #1a1a1a;
-            color: #888;
-            font-size: 10px;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.15s;
-        }
-
-        .preset-btn:active {
-            background: #333;
-            color: #fff;
-        }
-
-        .preset-btn.active-preset {
-            background: #ff4757;
-            border-color: #ff4757;
-            color: #fff;
-        }
-
-        .preset-save {
-            background: transparent;
-            border-style: dashed;
-            color: #555;
-        }
-
-        .controls-row {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-        }
-
-        .vol-group {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            flex: 1;
-            background: #1a1a1a;
-            border-radius: 16px;
-            padding: 5px 10px;
-        }
-
-        .vol-icon { color: #666; font-size: 12px; }
-
-        .volume-slider {
-            flex: 1;
-            -webkit-appearance: none;
-            appearance: none;
-            height: 3px;
-            background: #333;
-            border-radius: 2px;
-            outline: none;
-        }
-
-        .volume-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #fff;
-            cursor: pointer;
-            border: 2px solid #555;
-        }
-
-        .vol-num {
-            color: #aaa;
-            font-size: 11px;
-            min-width: 24px;
-            text-align: center;
-            font-variant-numeric: tabular-nums;
-            font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
-        }
-
-        .btn {
-            padding: 8px 10px;
-            border-radius: 16px;
-            border: none;
-            font-weight: 700;
-            font-size: 10px;
-            letter-spacing: 1px;
-            cursor: pointer;
-            text-transform: uppercase;
-            white-space: nowrap;
-            transition: all 0.15s;
-        }
-
-        .btn:active { transform: scale(0.95); }
-
-        .btn-record {
-            background: #2a2a2a;
-            color: #aaa;
-        }
-
-        .btn-record.recording {
-            background: #ff4757;
-            color: #fff;
-            animation: pulse-record 0.7s infinite;
-        }
-
-        @keyframes pulse-record {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.5); }
-            50% { box-shadow: 0 0 0 8px rgba(255, 71, 87, 0); }
-        }
-
-        .btn-play {
-            background: #2ecc71;
-            color: #fff;
-            flex: 1;
-        }
-
-        .btn-play:disabled {
-            background: #1a3a25;
-            color: #555;
-            cursor: not-allowed;
-        }
-
-        .btn-stop {
-            background: #444;
-            color: #fff;
-        }
-
-        .btn-stop:disabled {
-            background: #1a1a1a;
-            color: #444;
-            cursor: not-allowed;
-        }
-
-        .btn-clear {
-            background: transparent;
-            color: #666;
-            border: 1px solid #333;
-            font-size: 9px;
-            padding: 7px 10px;
-        }
-
-        .status-bar {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            font-size: 9px;
-            letter-spacing: 1px;
-            padding-bottom: 8px;
-        }
-
-        .status-dot {
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 3px;
-        }
-
-        .status-dot.ready { background: #2ecc71; }
-        .status-dot.recording { background: #ff4757; animation: pulse-record 0.7s infinite; }
-        .status-dot.playing { background: #f1c40f; }
-        .status-dot.editing { background: #ffd700; }
-        .status-dot.selecting { background: #00b4ff; }
-
-        .status-text {
-            color: #555;
-            text-transform: uppercase;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <span class="logo">🥁 Drum Machine</span>
-            <div class="header-btns">
-                <button class="icon-btn" id="sampleBtn" title="Select sample">♫</button>
-                <button class="icon-btn" id="editBtn" title="Edit layout">✎</button>
-                <button class="icon-btn" id="globalPitchUpBtn" title="Global Pitch +">↑</button>
-                <button class="icon-btn" id="globalPitchDownBtn" title="Global Pitch -">↓</button>
-                <div class="bpm-compact">
-                    <button class="bpm-btn" id="bpmDown">−</button>
-                    <span class="bpm-value" id="bpmValue">120</span>
-                    <span class="bpm-label">bpm</span>
-                    <button class="bpm-btn" id="bpmUp">+</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="bank-nav">
-            <button class="bank-arrow" id="bankPrev">◀</button>
-            <span class="bank-indicator" id="bankIndicator">BANK A</span>
-            <button class="bank-arrow" id="bankNext">▶</button>
-        </div>
-
-        <div class="preset-bar" id="presetBar">
-            <button class="preset-btn active-preset" data-preset="0">A</button>
-            <button class="preset-btn" data-preset="1">B</button>
-            <button class="preset-btn" data-preset="2">C</button>
-            <button class="preset-btn" data-preset="3">D</button>
-            <button class="preset-btn preset-save" id="savePresetBtn">+</button>
-        </div>
-
-        <div class="sample-list-container" id="sampleListContainer">
-            <input type="text" class="sample-search" id="sampleSearch" placeholder="🔍 Поиск семплов...">
-            <div class="pad-pitch-control" id="padPitchControl">
-                <span class="pad-pitch-label">🎵 Pitch:</span>
-                <button class="pad-pitch-btn" id="padPitchDown">−</button>
-                <span class="pad-pitch-value" id="padPitchValue">—</span>
-                <button class="pad-pitch-btn" id="padPitchUp">+</button>
-            </div>
-            <div class="sample-list" id="sampleList"></div>
-            <div class="sample-actions">
-                <label for="fileInput" class="sample-action-btn upload-btn" style="cursor:pointer;text-align:center;display:flex;justify-content:center;align-items:center;">📁 ЗАГРУЗИТЬ</label>
-                <input type="file" id="fileInput" multiple style="position:absolute;opacity:0;width:0;height:0;overflow:hidden;">
-                <button class="sample-action-btn assign-btn" id="assignSampleBtn">✓ НАЗНАЧИТЬ</button>
-                <button class="sample-action-btn delete-btn" id="deleteSampleBtn">🗑</button>
-            </div>
-        </div>
-
-        <div class="pads-grid" id="padsGrid">
-            <div class="pad pad-0" data-pad="0"><span class="pad-label">KICK 1</span><span class="pad-number">1</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-1" data-pad="1"><span class="pad-label">KICK 2</span><span class="pad-number">2</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-2" data-pad="2"><span class="pad-label">SNARE 1</span><span class="pad-number">3</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-3" data-pad="3"><span class="pad-label">SNARE 2</span><span class="pad-number">4</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-4" data-pad="4"><span class="pad-label">HH CL</span><span class="pad-number">5</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-5" data-pad="5"><span class="pad-label">HH OP</span><span class="pad-number">6</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-6" data-pad="6"><span class="pad-label">TOM HI</span><span class="pad-number">7</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-7" data-pad="7"><span class="pad-label">TOM MID</span><span class="pad-number">8</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-8" data-pad="8"><span class="pad-label">TOM LO</span><span class="pad-number">9</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-9" data-pad="9"><span class="pad-label">CLAP</span><span class="pad-number">10</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-10" data-pad="10"><span class="pad-label">RIM</span><span class="pad-number">11</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-11" data-pad="11"><span class="pad-label">SHAKER</span><span class="pad-number">12</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-12" data-pad="12"><span class="pad-label">CRASH</span><span class="pad-number">13</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-13" data-pad="13"><span class="pad-label">RIDE</span><span class="pad-number">14</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-14" data-pad="14"><span class="pad-label">PERC 1</span><span class="pad-number">15</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
-            <div class="pad pad-15" data-pad="15"><span class="pad-label">PERC 2</span><span class="pad-number">16</span><span class="pad-pitch"></span><span class="custom-indicator">◆</span></div>
-        </div>
-
-        <div class="controls-row">
-            <div class="vol-group">
-                <span class="vol-icon">🔈</span>
-                <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="80">
-                <span class="vol-num" id="volNum">80</span>
-            </div>
-            <button class="btn btn-record" id="recordBtn">⏺ REC</button>
-        </div>
-
-        <div class="controls-row">
-            <button class="btn btn-play" id="playBtn" disabled>▶ PLAY</button>
-            <button class="btn btn-stop" id="stopBtn" disabled>■ STOP</button>
-            <button class="btn btn-clear" id="clearBtn">✕ CLR</button>
-        </div>
-
-        <div class="status-bar">
-            <span class="status-text">
-                <span class="status-dot ready" id="statusDot"></span>
-                <span id="statusLabel">READY</span>
-            </span>
-        </div>
-    </div>
-
-    <script>
-        (function() {
-            const tg = window.Telegram.WebApp;
-            tg.ready();
-            tg.expand();
-
-            // ============ INDEXEDDB ============
-            const DB_NAME = 'DrumMachineDB';
-            const DB_VERSION = 1;
-            let db = null;
-
-            function openDB() {
-                return new Promise((resolve, reject) => {
-                    const request = indexedDB.open(DB_NAME, DB_VERSION);
-                    request.onupgradeneeded = (e) => {
-                        const db = e.target.result;
-                        if (!db.objectStoreNames.contains('samples')) {
-                            db.createObjectStore('samples', { keyPath: 'id', autoIncrement: true });
-                        }
-                        if (!db.objectStoreNames.contains('layouts')) {
-                            db.createObjectStore('layouts', { keyPath: 'presetIndex' });
-                        }
-                    };
-                    request.onsuccess = (e) => { db = e.target.result; resolve(db); };
-                    request.onerror = (e) => reject(e.target.error);
-                });
-            }
-
-            function saveSampleToDB(name, audioBuffer) {
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction('samples', 'readwrite');
-                    const store = tx.objectStore('samples');
-                    const channels = [];
-                    for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
-                        channels.push(Array.from(audioBuffer.getChannelData(ch)));
+<script>
+    (function() {
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        // ============ INDEXEDDB ============
+        const DB_NAME = 'DrumMachineDB';
+        const DB_VERSION = 1;
+        let db = null;
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('samples')) {
+                        db.createObjectStore('samples', { keyPath: 'id', autoIncrement: true });
                     }
-                    store.add({
-                        name, sampleRate: audioBuffer.sampleRate,
-                        length: audioBuffer.length, numberOfChannels: audioBuffer.numberOfChannels,
-                        channels
-                    }).onsuccess = (e) => resolve(e.target.result);
-                });
-            }
+                    if (!db.objectStoreNames.contains('layouts')) {
+                        db.createObjectStore('layouts', { keyPath: 'presetIndex' });
+                    }
+                };
+                request.onsuccess = (e) => { db = e.target.result; resolve(db); };
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
 
-            function loadAllSamplesFromDB() {
-                return new Promise((resolve) => {
-                    const tx = db.transaction('samples', 'readonly');
-                    tx.objectStore('samples').getAll().onsuccess = (e) => {
-                        const results = e.target.result;
-                        const buffers = results.map(item => {
-                            if (!audioCtx) initAudio();
-                            const buf = audioCtx.createBuffer(item.numberOfChannels, item.length, item.sampleRate);
-                            for (let ch = 0; ch < item.numberOfChannels; ch++) {
-                                buf.copyToChannel(new Float32Array(item.channels[ch]), ch);
-                            }
-                            return { id: item.id, name: item.name, buffer: buf };
-                        });
-                        resolve(buffers);
-                    };
-                });
-            }
-
-            function deleteSampleFromDB(id) {
-                return new Promise((resolve) => {
-                    db.transaction('samples', 'readwrite').objectStore('samples').delete(id).onsuccess = resolve;
-                });
-            }
-
-            function saveLayoutToDB(idx, layout, pitches) {
-                return new Promise((resolve) => {
-                    const tx = db.transaction('layouts', 'readwrite');
-                    tx.objectStore('layouts').put({ presetIndex: idx, layout, pitches });
-                    tx.oncomplete = resolve;
-                });
-            }
-
-            function loadLayoutFromDB(idx) {
-                return new Promise((resolve) => {
-                    const tx = db.transaction('layouts', 'readonly');
-                    const req = tx.objectStore('layouts').get(idx);
-                    req.onsuccess = () => resolve(req.result || null);
-                });
-            }
-
-            function loadAllLayoutsFromDB() {
-                return new Promise((resolve) => {
-                    const tx = db.transaction('layouts', 'readonly');
-                    tx.objectStore('layouts').getAll().onsuccess = (e) => {
-                        const result = {};
-                        e.target.result.forEach(item => { result[item.presetIndex] = item; });
-                        resolve(result);
-                    };
-                });
-            }
-
-            // ============ AUDIO ENGINE ============
-            let audioCtx = null, masterGain = null, sampleBuffers = [], volume = 0.8;
-            let isRecording = false, recordedEvents = [], recordingStartTime = 0;
-            let isPlaying = false, playbackTimeout = null, bpm = 120;
-            const activeTouches = new Map();
-            let editMode = false, sampleSelectMode = false;
-            let currentPreset = 0, dragPadIndex = null;
-            let selectedSampleIndex = null;
-            let selectedPadIndex = null;
-            let globalPitchShift = 0;
-
-            const builtinNames = [
-                'KICK 1','KICK 2','SNARE 1','SNARE 2','HH CL','HH OP','TOM HI','TOM MID',
-                'TOM LO','CLAP','RIM','SHAKER','CRASH','RIDE','PERC 1','PERC 2'
-            ];
-            const bankNames = ['BANK A','BANK B','BANK C','BANK D'];
-            const defaultLayout = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
-            const defaultPitches = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-
-            let presets = [
-                { layout: [...defaultLayout], pitches: [...defaultPitches] },
-                { layout: [...defaultLayout], pitches: [...defaultPitches] },
-                { layout: [...defaultLayout], pitches: [...defaultPitches] },
-                { layout: [...defaultLayout], pitches: [...defaultPitches] }
-            ];
-            let currentLayout = [...defaultLayout];
-            let currentPitches = [...defaultPitches];
-            let customSamples = [], sampleList = [];
-
-            function buildSampleList() {
-                sampleList = [];
-                for (let i = 0; i < 16; i++) sampleList.push({ name: builtinNames[i], type: 'builtin', index: i });
-                for (let i = 0; i < customSamples.length; i++) {
-                    sampleList.push({ name: customSamples[i].name, type: 'custom', index: 16 + i, dbId: customSamples[i].id });
+        function saveSampleToDB(name, audioBuffer) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction('samples', 'readwrite');
+                const store = tx.objectStore('samples');
+                const channels = [];
+                for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
+                    channels.push(Array.from(audioBuffer.getChannelData(ch)));
                 }
-            }
+                store.add({
+                    name, sampleRate: audioBuffer.sampleRate,
+                    length: audioBuffer.length, numberOfChannels: audioBuffer.numberOfChannels,
+                    channels
+                }).onsuccess = (e) => resolve(e.target.result);
+            });
+        }
 
-            // ============ DOM ============
-            const padsGrid = document.getElementById('padsGrid');
-            const recordBtn = document.getElementById('recordBtn');
-            const playBtn = document.getElementById('playBtn');
-            const stopBtn = document.getElementById('stopBtn');
-            const clearBtn = document.getElementById('clearBtn');
-            const volumeSlider = document.getElementById('volumeSlider');
-            const volNum = document.getElementById('volNum');
-            const bpmValue = document.getElementById('bpmValue');
-            const bpmDown = document.getElementById('bpmDown');
-            const bpmUp = document.getElementById('bpmUp');
-            const statusDot = document.getElementById('statusDot');
-            const statusLabel = document.getElementById('statusLabel');
-            const editBtn = document.getElementById('editBtn');
-            const sampleBtn = document.getElementById('sampleBtn');
-            const sampleListContainer = document.getElementById('sampleListContainer');
-            const sampleListEl = document.getElementById('sampleList');
-            const sampleSearch = document.getElementById('sampleSearch');
-            const assignSampleBtn = document.getElementById('assignSampleBtn');
-            const deleteSampleBtn = document.getElementById('deleteSampleBtn');
-            const fileInput = document.getElementById('fileInput');
-            const presetBar = document.getElementById('presetBar');
-            const savePresetBtn = document.getElementById('savePresetBtn');
-            const bankIndicator = document.getElementById('bankIndicator');
-            const bankPrev = document.getElementById('bankPrev');
-            const bankNext = document.getElementById('bankNext');
-            const globalPitchUpBtn = document.getElementById('globalPitchUpBtn');
-            const globalPitchDownBtn = document.getElementById('globalPitchDownBtn');
-            const padPitchValue = document.getElementById('padPitchValue');
-            const padPitchUp = document.getElementById('padPitchUp');
-            const padPitchDown = document.getElementById('padPitchDown');
-
-            // ============ PRESETS ============
-            function updatePresetButtons() {
-                document.querySelectorAll('.preset-btn:not(.preset-save)').forEach(btn => {
-                    btn.classList.toggle('active-preset', parseInt(btn.dataset.preset) === currentPreset);
-                });
-                bankIndicator.textContent = bankNames[currentPreset];
-            }
-
-            async function loadPreset(index) {
-                currentPreset = index;
-                const dbData = await loadLayoutFromDB(index);
-                if (dbData && dbData.layout) {
-                    currentLayout = [...dbData.layout];
-                    currentPitches = dbData.pitches ? [...dbData.pitches] : [...defaultPitches];
-                    presets[index] = { layout: [...dbData.layout], pitches: [...currentPitches] };
-                } else {
-                    currentLayout = [...presets[index].layout];
-                    currentPitches = [...presets[index].pitches];
-                }
-                updatePadsDisplay();
-                updatePresetButtons();
-            }
-
-            async function saveCurrentPreset() {
-                presets[currentPreset] = { layout: [...currentLayout], pitches: [...currentPitches] };
-                localStorage.setItem('drummachine_presets', JSON.stringify(presets));
-                await saveLayoutToDB(currentPreset, currentLayout, currentPitches);
-            }
-
-            // ============ LAYOUT ============
-            function getPadClass(sampleIndex) {
-                if (sampleIndex >= 16) return 'pad-custom';
-                return 'pad-' + sampleIndex;
-            }
-
-            function getPadLabel(sampleIndex) {
-                if (sampleIndex >= 16) {
-                    const ci = sampleIndex - 16;
-                    return customSamples[ci] ? customSamples[ci].name : 'CUSTOM';
-                }
-                return sampleList[sampleIndex] ? sampleList[sampleIndex].name : '???';
-            }
-
-            function updateSinglePad(pad) {
-                const pos = parseInt(pad.dataset.pad);
-                const si = currentLayout[pos];
-                const pitch = currentPitches[pos];
-                const wasActive = pad.classList.contains('active');
-
-                pad.className = 'pad';
-                pad.classList.add(getPadClass(si));
-                if (si >= 16) pad.classList.add('custom-sample');
-                if (editMode) pad.classList.add('edit-mode');
-                if (sampleSelectMode) pad.classList.add('sample-select-mode');
-                if (pos === selectedPadIndex) pad.classList.add('selected-pad');
-                if (wasActive) pad.classList.add('active');
-
-                pad.querySelector('.pad-label').textContent = getPadLabel(si);
-                pad.querySelector('.pad-number').textContent = pos + 1;
-
-                const pitchEl = pad.querySelector('.pad-pitch');
-                pitchEl.textContent = pitch !== 0 ? (pitch > 0 ? '+' : '') + pitch : '';
-                if (pitch !== 0) {
-                    pitchEl.classList.add('has-pitch');
-                } else {
-                    pitchEl.classList.remove('has-pitch');
-                }
-            }
-
-            function updatePadsDisplay() {
-                buildSampleList();
-                const pads = document.querySelectorAll('.pad');
-                pads.forEach(pad => updateSinglePad(pad));
-                updatePadPitchUI();
-            }
-
-            function updatePadPitchUI() {
-                if (selectedPadIndex !== null && currentPitches[selectedPadIndex] !== undefined) {
-                    const p = currentPitches[selectedPadIndex];
-                    padPitchValue.textContent = (p >= 0 ? '+' : '') + p;
-                } else {
-                    padPitchValue.textContent = '—';
-                }
-            }
-
-            function swapPads(posA, posB) {
-                [currentLayout[posA], currentLayout[posB]] = [currentLayout[posB], currentLayout[posA]];
-                [currentPitches[posA], currentPitches[posB]] = [currentPitches[posB], currentPitches[posA]];
-                updatePadsDisplay();
-                saveCurrentPreset();
-            }
-
-            function setPadPitch(padIndex, semitones) {
-                if (padIndex === null || padIndex === undefined) return;
-                currentPitches[padIndex] = Math.max(-12, Math.min(12, semitones));
-                const pad = document.querySelector('.pad[data-pad="' + padIndex + '"]');
-                if (pad) updateSinglePad(pad);
-                updatePadPitchUI();
-                saveCurrentPreset();
-            }
-
-            function changeSelectedPadPitch(delta) {
-                if (selectedPadIndex === null || selectedPadIndex === undefined) return;
-                setPadPitch(selectedPadIndex, currentPitches[selectedPadIndex] + delta);
-            }
-
-            // ============ GLOBAL PITCH ============
-            function shiftGlobalPitch(semitones) {
-                globalPitchShift = Math.max(-12, Math.min(12, globalPitchShift + semitones));
-                globalPitchUpBtn.style.color = globalPitchShift > 0 ? '#f1c40f' : '#aaa';
-                globalPitchDownBtn.style.color = globalPitchShift < 0 ? '#f1c40f' : '#aaa';
-                setStatus('ready', 'GLOBAL: ' + (globalPitchShift >= 0 ? '+' : '') + globalPitchShift);
-                setTimeout(() => { if (statusLabel.textContent.startsWith('GLOBAL')) setStatus('ready', 'READY'); }, 1500);
-            }
-
-            // ============ SAMPLE LIST ============
-            function renderSampleList(filter = '') {
-                const f = filter.toLowerCase();
-                sampleListEl.innerHTML = sampleList
-                    .filter(s => s.name.toLowerCase().includes(f))
-                    .map(s => {
-                        const cls = 'sample-item' + (s.type === 'custom' ? ' custom' : '') + (s.index === selectedSampleIndex ? ' selected' : '');
-                        return '<div class="' + cls + '" data-sample="' + s.index + '">' + s.name + '</div>';
-                    }).join('');
-                sampleListEl.querySelectorAll('.sample-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        selectedSampleIndex = parseInt(item.dataset.sample);
-                        renderSampleList(sampleSearch.value);
+        function loadAllSamplesFromDB() {
+            return new Promise((resolve) => {
+                const tx = db.transaction('samples', 'readonly');
+                tx.objectStore('samples').getAll().onsuccess = (e) => {
+                    const results = e.target.result;
+                    const buffers = results.map(item => {
+                        if (!audioCtx) initAudio();
+                        const buf = audioCtx.createBuffer(item.numberOfChannels, item.length, item.sampleRate);
+                        for (let ch = 0; ch < item.numberOfChannels; ch++) {
+                            buf.copyToChannel(new Float32Array(item.channels[ch]), ch);
+                        }
+                        return { id: item.id, name: item.name, buffer: buf };
                     });
-                });
-            }
+                    resolve(buffers);
+                };
+            });
+        }
 
-            function toggleSampleList() {
-                sampleSelectMode = !sampleSelectMode;
-                sampleListContainer.classList.toggle('visible', sampleSelectMode);
-                sampleBtn.classList.toggle('active', sampleSelectMode);
+        function deleteSampleFromDB(id) {
+            return new Promise((resolve) => {
+                db.transaction('samples', 'readwrite').objectStore('samples').delete(id).onsuccess = resolve;
+            });
+        }
+
+        function saveLayoutToDB(idx, layout, pitches) {
+            return new Promise((resolve) => {
+                const tx = db.transaction('layouts', 'readwrite');
+                tx.objectStore('layouts').put({ presetIndex: idx, layout, pitches });
+                tx.oncomplete = resolve;
+            });
+        }
+
+        function loadLayoutFromDB(idx) {
+            return new Promise((resolve) => {
+                const tx = db.transaction('layouts', 'readonly');
+                const req = tx.objectStore('layouts').get(idx);
+                req.onsuccess = () => resolve(req.result || null);
+            });
+        }
+
+        function loadAllLayoutsFromDB() {
+            return new Promise((resolve) => {
+                const tx = db.transaction('layouts', 'readonly');
+                tx.objectStore('layouts').getAll().onsuccess = (e) => {
+                    const result = {};
+                    e.target.result.forEach(item => { result[item.presetIndex] = item; });
+                    resolve(result);
+                };
+            });
+        }
+
+        // ============ AUDIO ENGINE ============
+        let audioCtx = null, masterGain = null, sampleBuffers = [], volume = 0.8;
+        let isRecording = false, recordedEvents = [], recordingStartTime = 0;
+        let isPlaying = false, playbackTimeout = null, bpm = 120;
+        const activeTouches = new Map();
+        let editMode = false, sampleSelectMode = false;
+        let currentPreset = 0, dragPadIndex = null;
+        let selectedSampleIndex = null;
+        let selectedPadIndex = null;
+        let globalPitchShift = 0;
+
+        // Хранилище активных источников звука для каждого пэда
+        const activeSources = {}; // padIndex -> AudioBufferSourceNode
+
+        const builtinNames = [
+            'KICK 1','KICK 2','SNARE 1','SNARE 2','HH CL','HH OP','TOM HI','TOM MID',
+            'TOM LO','CLAP','RIM','SHAKER','CRASH','RIDE','PERC 1','PERC 2'
+        ];
+        const bankNames = ['BANK A','BANK B','BANK C','BANK D'];
+        const defaultLayout = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+        const defaultPitches = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+
+        let presets = [
+            { layout: [...defaultLayout], pitches: [...defaultPitches] },
+            { layout: [...defaultLayout], pitches: [...defaultPitches] },
+            { layout: [...defaultLayout], pitches: [...defaultPitches] },
+            { layout: [...defaultLayout], pitches: [...defaultPitches] }
+        ];
+        let currentLayout = [...defaultLayout];
+        let currentPitches = [...defaultPitches];
+        let customSamples = [], sampleList = [];
+
+        function buildSampleList() {
+            sampleList = [];
+            for (let i = 0; i < 16; i++) sampleList.push({ name: builtinNames[i], type: 'builtin', index: i });
+            for (let i = 0; i < customSamples.length; i++) {
+                sampleList.push({ name: customSamples[i].name, type: 'custom', index: 16 + i, dbId: customSamples[i].id });
+            }
+        }
+
+        // ============ DOM ============
+        const padsGrid = document.getElementById('padsGrid');
+        const recordBtn = document.getElementById('recordBtn');
+        const playBtn = document.getElementById('playBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volNum = document.getElementById('volNum');
+        const bpmValue = document.getElementById('bpmValue');
+        const bpmDown = document.getElementById('bpmDown');
+        const bpmUp = document.getElementById('bpmUp');
+        const statusDot = document.getElementById('statusDot');
+        const statusLabel = document.getElementById('statusLabel');
+        const editBtn = document.getElementById('editBtn');
+        const sampleBtn = document.getElementById('sampleBtn');
+        const sampleListContainer = document.getElementById('sampleListContainer');
+        const sampleListEl = document.getElementById('sampleList');
+        const sampleSearch = document.getElementById('sampleSearch');
+        const assignSampleBtn = document.getElementById('assignSampleBtn');
+        const deleteSampleBtn = document.getElementById('deleteSampleBtn');
+        const fileInput = document.getElementById('fileInput');
+        const presetBar = document.getElementById('presetBar');
+        const savePresetBtn = document.getElementById('savePresetBtn');
+        const bankIndicator = document.getElementById('bankIndicator');
+        const bankPrev = document.getElementById('bankPrev');
+        const bankNext = document.getElementById('bankNext');
+        const globalPitchUpBtn = document.getElementById('globalPitchUpBtn');
+        const globalPitchDownBtn = document.getElementById('globalPitchDownBtn');
+        const padPitchValue = document.getElementById('padPitchValue');
+        const padPitchUp = document.getElementById('padPitchUp');
+        const padPitchDown = document.getElementById('padPitchDown');
+
+        // ============ PRESETS ============
+        function updatePresetButtons() {
+            document.querySelectorAll('.preset-btn:not(.preset-save)').forEach(btn => {
+                btn.classList.toggle('active-preset', parseInt(btn.dataset.preset) === currentPreset);
+            });
+            bankIndicator.textContent = bankNames[currentPreset];
+        }
+
+        async function loadPreset(index) {
+            currentPreset = index;
+            const dbData = await loadLayoutFromDB(index);
+            if (dbData && dbData.layout) {
+                currentLayout = [...dbData.layout];
+                currentPitches = dbData.pitches ? [...dbData.pitches] : [...defaultPitches];
+                presets[index] = { layout: [...dbData.layout], pitches: [...currentPitches] };
+            } else {
+                currentLayout = [...presets[index].layout];
+                currentPitches = [...presets[index].pitches];
+            }
+            updatePadsDisplay();
+            updatePresetButtons();
+        }
+
+        async function saveCurrentPreset() {
+            presets[currentPreset] = { layout: [...currentLayout], pitches: [...currentPitches] };
+            localStorage.setItem('drummachine_presets', JSON.stringify(presets));
+            await saveLayoutToDB(currentPreset, currentLayout, currentPitches);
+        }
+
+        // ============ LAYOUT ============
+        function getPadClass(sampleIndex) {
+            if (sampleIndex >= 16) return 'pad-custom';
+            return 'pad-' + sampleIndex;
+        }
+
+        function getPadLabel(sampleIndex) {
+            if (sampleIndex >= 16) {
+                const ci = sampleIndex - 16;
+                return customSamples[ci] ? customSamples[ci].name : 'CUSTOM';
+            }
+            return sampleList[sampleIndex] ? sampleList[sampleIndex].name : '???';
+        }
+
+        function updateSinglePad(pad) {
+            const pos = parseInt(pad.dataset.pad);
+            const si = currentLayout[pos];
+            const pitch = currentPitches[pos];
+            const wasActive = pad.classList.contains('active');
+
+            pad.className = 'pad';
+            pad.classList.add(getPadClass(si));
+            if (si >= 16) pad.classList.add('custom-sample');
+            if (editMode) pad.classList.add('edit-mode');
+            if (sampleSelectMode) pad.classList.add('sample-select-mode');
+            if (pos === selectedPadIndex) pad.classList.add('selected-pad');
+            if (wasActive) pad.classList.add('active');
+
+            pad.querySelector('.pad-label').textContent = getPadLabel(si);
+            pad.querySelector('.pad-number').textContent = pos + 1;
+
+            const pitchEl = pad.querySelector('.pad-pitch');
+            pitchEl.textContent = pitch !== 0 ? (pitch > 0 ? '+' : '') + pitch : '';
+            if (pitch !== 0) {
+                pitchEl.classList.add('has-pitch');
+            } else {
+                pitchEl.classList.remove('has-pitch');
+            }
+        }
+
+        function updatePadsDisplay() {
+            buildSampleList();
+            const pads = document.querySelectorAll('.pad');
+            pads.forEach(pad => updateSinglePad(pad));
+            updatePadPitchUI();
+        }
+
+        function updatePadPitchUI() {
+            if (selectedPadIndex !== null && currentPitches[selectedPadIndex] !== undefined) {
+                const p = currentPitches[selectedPadIndex];
+                padPitchValue.textContent = (p >= 0 ? '+' : '') + p;
+            } else {
+                padPitchValue.textContent = '—';
+            }
+        }
+
+        function swapPads(posA, posB) {
+            [currentLayout[posA], currentLayout[posB]] = [currentLayout[posB], currentLayout[posA]];
+            [currentPitches[posA], currentPitches[posB]] = [currentPitches[posB], currentPitches[posA]];
+            updatePadsDisplay();
+            saveCurrentPreset();
+        }
+
+        function setPadPitch(padIndex, semitones) {
+            if (padIndex === null || padIndex === undefined) return;
+            currentPitches[padIndex] = Math.max(-12, Math.min(12, semitones));
+            const pad = document.querySelector('.pad[data-pad="' + padIndex + '"]');
+            if (pad) updateSinglePad(pad);
+            updatePadPitchUI();
+            saveCurrentPreset();
+        }
+
+        function changeSelectedPadPitch(delta) {
+            if (selectedPadIndex === null || selectedPadIndex === undefined) return;
+            setPadPitch(selectedPadIndex, currentPitches[selectedPadIndex] + delta);
+        }
+
+        // ============ GLOBAL PITCH ============
+        function shiftGlobalPitch(semitones) {
+            globalPitchShift = Math.max(-12, Math.min(12, globalPitchShift + semitones));
+            globalPitchUpBtn.style.color = globalPitchShift > 0 ? '#f1c40f' : '#aaa';
+            globalPitchDownBtn.style.color = globalPitchShift < 0 ? '#f1c40f' : '#aaa';
+            setStatus('ready', 'GLOBAL: ' + (globalPitchShift >= 0 ? '+' : '') + globalPitchShift);
+            setTimeout(() => { if (statusLabel.textContent.startsWith('GLOBAL')) setStatus('ready', 'READY'); }, 1500);
+        }
+
+        // ============ SAMPLE LIST ============
+        function renderSampleList(filter = '') {
+            const f = filter.toLowerCase();
+            sampleListEl.innerHTML = sampleList
+                .filter(s => s.name.toLowerCase().includes(f))
+                .map(s => {
+                    const cls = 'sample-item' + (s.type === 'custom' ? ' custom' : '') + (s.index === selectedSampleIndex ? ' selected' : '');
+                    return '<div class="' + cls + '" data-sample="' + s.index + '">' + s.name + '</div>';
+                }).join('');
+            sampleListEl.querySelectorAll('.sample-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    selectedSampleIndex = parseInt(item.dataset.sample);
+                    renderSampleList(sampleSearch.value);
+                });
+            });
+        }
+
+        function toggleSampleList() {
+            sampleSelectMode = !sampleSelectMode;
+            sampleListContainer.classList.toggle('visible', sampleSelectMode);
+            sampleBtn.classList.toggle('active', sampleSelectMode);
+
+            if (sampleSelectMode) {
+                editMode = false;
+                editBtn.classList.remove('active');
+                selectedPadIndex = null;
+                document.querySelectorAll('.pad.selected-pad').forEach(p => p.classList.remove('selected-pad'));
+                renderSampleList();
+                updatePadsDisplay();
+                setStatus('selecting', 'SELECT PAD');
+            } else {
+                selectedSampleIndex = null;
+                selectedPadIndex = null;
+                document.querySelectorAll('.pad.selected-pad').forEach(p => p.classList.remove('selected-pad'));
+                updatePadsDisplay();
+                setStatus('ready', 'READY');
+            }
+        }
+
+        // ============ FILE UPLOAD ============
+        fileInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
+            if (!audioCtx) initAudio();
+            
+            const audioExtensions = ['wav', 'mp3', 'ogg', 'm4a', 'aac', 'flac', 'aiff', 'wma', 'opus'];
+            
+            for (const file of files) {
+                const ext = file.name.split('.').pop().toLowerCase();
+                const isAudio = audioExtensions.includes(ext) || file.type.startsWith('audio/');
+                
+                if (!isAudio) {
+                    alert('Пропущен (не аудио): ' + file.name);
+                    continue;
+                }
+                
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                    const name = file.name.replace(/\.[^/.]+$/, '').substring(0, 15).toUpperCase();
+                    const dbId = await saveSampleToDB(name, audioBuffer);
+                    customSamples.push({ id: dbId, name, buffer: audioBuffer });
+                } catch(err) {
+                    console.error('Failed to load sample:', file.name, err);
+                    alert('Ошибка загрузки: ' + file.name + '\n' + err.message);
+                }
+            }
+            
+            buildSampleList(); 
+            renderSampleList(sampleSearch.value); 
+            updatePadsDisplay(); 
+            saveCurrentPreset();
+            fileInput.value = '';
+        });
+
+        assignSampleBtn.addEventListener('click', () => {
+            if (selectedSampleIndex === null || selectedPadIndex === null) return;
+            currentLayout[selectedPadIndex] = selectedSampleIndex;
+            const pad = document.querySelector('.pad.selected-pad');
+            if (pad) pad.classList.remove('selected-pad');
+            selectedSampleIndex = null;
+            updatePadsDisplay();
+            saveCurrentPreset();
+            renderSampleList(sampleSearch.value);
+        });
+
+        deleteSampleBtn.addEventListener('click', async () => {
+            if (selectedSampleIndex === null || selectedSampleIndex < 16) return;
+            const ci = selectedSampleIndex - 16;
+            if (!customSamples[ci]) return;
+            if (!confirm('Удалить "' + customSamples[ci].name + '"?')) return;
+            await deleteSampleFromDB(customSamples[ci].id);
+            customSamples.splice(ci, 1);
+            for (let i = 0; i < currentLayout.length; i++) {
+                if (currentLayout[i] === selectedSampleIndex) currentLayout[i] = 0;
+                else if (currentLayout[i] > selectedSampleIndex) currentLayout[i]--;
+            }
+            selectedSampleIndex = null;
+            buildSampleList(); renderSampleList(sampleSearch.value); updatePadsDisplay(); saveCurrentPreset();
+        });
+
+        sampleSearch.addEventListener('input', () => renderSampleList(sampleSearch.value));
+        padPitchUp.addEventListener('click', () => changeSelectedPadPitch(1));
+        padPitchDown.addEventListener('click', () => changeSelectedPadPitch(-1));
+
+        // ============ TOUCH ============
+        function getPadAtPoint(x, y) {
+            const el = document.elementFromPoint(x, y);
+            return el ? el.closest('.pad') : null;
+        }
+
+        let longPressTimer = null, longPressActive = false;
+
+        padsGrid.addEventListener('touchstart', (e) => {
+            if (editMode || sampleSelectMode) {
+                e.preventDefault();
+                const pad = getPadAtPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+                if (!pad) return;
 
                 if (sampleSelectMode) {
-                    editMode = false;
-                    editBtn.classList.remove('active');
-                    selectedPadIndex = null;
                     document.querySelectorAll('.pad.selected-pad').forEach(p => p.classList.remove('selected-pad'));
-                    renderSampleList();
+                    pad.classList.add('selected-pad');
+                    selectedPadIndex = parseInt(pad.dataset.pad);
                     updatePadsDisplay();
-                    setStatus('selecting', 'SELECT PAD');
-                } else {
-                    selectedSampleIndex = null;
-                    selectedPadIndex = null;
-                    document.querySelectorAll('.pad.selected-pad').forEach(p => p.classList.remove('selected-pad'));
-                    updatePadsDisplay();
-                    setStatus('ready', 'READY');
-                }
-            }
-
-            // ============ FILE UPLOAD (без accept для совместимости с Telegram WebView) ============
-            fileInput.addEventListener('change', async (e) => {
-                const files = Array.from(e.target.files);
-                if (!files.length) return;
-                if (!audioCtx) initAudio();
-                
-                const audioExtensions = ['wav', 'mp3', 'ogg', 'm4a', 'aac', 'flac', 'aiff', 'wma', 'opus'];
-                
-                for (const file of files) {
-                    const ext = file.name.split('.').pop().toLowerCase();
-                    const isAudio = audioExtensions.includes(ext) || file.type.startsWith('audio/');
-                    
-                    if (!isAudio) {
-                        alert('Пропущен (не аудио): ' + file.name);
-                        continue;
-                    }
-                    
-                    try {
-                        const arrayBuffer = await file.arrayBuffer();
-                        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-                        const name = file.name.replace(/\.[^/.]+$/, '').substring(0, 15).toUpperCase();
-                        const dbId = await saveSampleToDB(name, audioBuffer);
-                        customSamples.push({ id: dbId, name, buffer: audioBuffer });
-                    } catch(err) {
-                        console.error('Failed to load sample:', file.name, err);
-                        alert('Ошибка загрузки: ' + file.name + '\n' + err.message);
-                    }
-                }
-                
-                buildSampleList(); 
-                renderSampleList(sampleSearch.value); 
-                updatePadsDisplay(); 
-                saveCurrentPreset();
-                fileInput.value = '';
-            });
-
-            assignSampleBtn.addEventListener('click', () => {
-                if (selectedSampleIndex === null || selectedPadIndex === null) return;
-                currentLayout[selectedPadIndex] = selectedSampleIndex;
-                const pad = document.querySelector('.pad.selected-pad');
-                if (pad) pad.classList.remove('selected-pad');
-                selectedSampleIndex = null;
-                updatePadsDisplay();
-                saveCurrentPreset();
-                renderSampleList(sampleSearch.value);
-            });
-
-            deleteSampleBtn.addEventListener('click', async () => {
-                if (selectedSampleIndex === null || selectedSampleIndex < 16) return;
-                const ci = selectedSampleIndex - 16;
-                if (!customSamples[ci]) return;
-                if (!confirm('Удалить "' + customSamples[ci].name + '"?')) return;
-                await deleteSampleFromDB(customSamples[ci].id);
-                customSamples.splice(ci, 1);
-                for (let i = 0; i < currentLayout.length; i++) {
-                    if (currentLayout[i] === selectedSampleIndex) currentLayout[i] = 0;
-                    else if (currentLayout[i] > selectedSampleIndex) currentLayout[i]--;
-                }
-                selectedSampleIndex = null;
-                buildSampleList(); renderSampleList(sampleSearch.value); updatePadsDisplay(); saveCurrentPreset();
-            });
-
-            sampleSearch.addEventListener('input', () => renderSampleList(sampleSearch.value));
-            padPitchUp.addEventListener('click', () => changeSelectedPadPitch(1));
-            padPitchDown.addEventListener('click', () => changeSelectedPadPitch(-1));
-
-            // ============ TOUCH ============
-            function getPadAtPoint(x, y) {
-                const el = document.elementFromPoint(x, y);
-                return el ? el.closest('.pad') : null;
-            }
-
-            let longPressTimer = null, longPressActive = false;
-
-            padsGrid.addEventListener('touchstart', (e) => {
-                if (editMode || sampleSelectMode) {
-                    e.preventDefault();
-                    const pad = getPadAtPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-                    if (!pad) return;
-
-                    if (sampleSelectMode) {
-                        document.querySelectorAll('.pad.selected-pad').forEach(p => p.classList.remove('selected-pad'));
-                        pad.classList.add('selected-pad');
-                        selectedPadIndex = parseInt(pad.dataset.pad);
-                        updatePadsDisplay();
-                        return;
-                    }
-                    if (editMode) {
-                        dragPadIndex = parseInt(pad.dataset.pad);
-                        longPressTimer = setTimeout(() => {
-                            longPressActive = true; pad.classList.add('dragging');
-                            if (navigator.vibrate) navigator.vibrate(10);
-                        }, 400);
-                        return;
-                    }
                     return;
                 }
+                if (editMode) {
+                    dragPadIndex = parseInt(pad.dataset.pad);
+                    longPressTimer = setTimeout(() => {
+                        longPressActive = true; pad.classList.add('dragging');
+                        if (navigator.vibrate) navigator.vibrate(10);
+                    }, 400);
+                    return;
+                }
+                return;
+            }
 
+            e.preventDefault();
+            if (!audioCtx) initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            for (const touch of e.changedTouches) {
+                if (activeTouches.has(touch.identifier)) continue;
+                const pad = getPadAtPoint(touch.clientX, touch.clientY);
+                if (pad) {
+                    const idx = parseInt(pad.dataset.pad);
+                    activeTouches.set(touch.identifier, idx);
+                    pad.classList.add('active');
+                    playPad(idx);
+                }
+            }
+        }, { passive: false });
+
+        padsGrid.addEventListener('touchmove', (e) => {
+            if (editMode && longPressActive && dragPadIndex !== null) {
                 e.preventDefault();
-                if (!audioCtx) initAudio();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const pad = getPadAtPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+                document.querySelectorAll('.pad.drag-over').forEach(p => p.classList.remove('drag-over'));
+                if (pad && parseInt(pad.dataset.pad) !== dragPadIndex) pad.classList.add('drag-over');
+            }
+        }, { passive: false });
 
-                for (const touch of e.changedTouches) {
-                    if (activeTouches.has(touch.identifier)) continue;
-                    const pad = getPadAtPoint(touch.clientX, touch.clientY);
-                    if (pad) {
-                        const idx = parseInt(pad.dataset.pad);
-                        activeTouches.set(touch.identifier, idx);
-                        pad.classList.add('active');
-                        playPad(idx);
-                    }
-                }
-            }, { passive: false });
-
-            padsGrid.addEventListener('touchmove', (e) => {
-                if (editMode && longPressActive && dragPadIndex !== null) {
-                    e.preventDefault();
-                    const pad = getPadAtPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-                    document.querySelectorAll('.pad.drag-over').forEach(p => p.classList.remove('drag-over'));
-                    if (pad && parseInt(pad.dataset.pad) !== dragPadIndex) pad.classList.add('drag-over');
-                }
-            }, { passive: false });
-
-            padsGrid.addEventListener('touchend', (e) => {
-                if (editMode || sampleSelectMode) {
-                    if (longPressTimer) clearTimeout(longPressTimer);
-                    if (longPressActive && dragPadIndex !== null) {
-                        const pad = getPadAtPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-                        document.querySelectorAll('.pad.dragging, .pad.drag-over').forEach(p => p.classList.remove('dragging', 'drag-over'));
-                        if (pad) { const t = parseInt(pad.dataset.pad); if (t !== dragPadIndex) swapPads(dragPadIndex, t); }
-                    }
-                    longPressActive = false; dragPadIndex = null;
-                    return;
-                }
-                for (const touch of e.changedTouches) {
-                    if (activeTouches.has(touch.identifier)) {
-                        const idx = activeTouches.get(touch.identifier);
-                        activeTouches.delete(touch.identifier);
-                        const pad = document.querySelector('.pad[data-pad="' + idx + '"]');
-                        if (pad) pad.classList.remove('active');
-                    }
-                }
-            });
-
-            document.addEventListener('touchcancel', () => {
+        padsGrid.addEventListener('touchend', (e) => {
+            if (editMode || sampleSelectMode) {
                 if (longPressTimer) clearTimeout(longPressTimer);
+                if (longPressActive && dragPadIndex !== null) {
+                    const pad = getPadAtPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+                    document.querySelectorAll('.pad.dragging, .pad.drag-over').forEach(p => p.classList.remove('dragging', 'drag-over'));
+                    if (pad) { const t = parseInt(pad.dataset.pad); if (t !== dragPadIndex) swapPads(dragPadIndex, t); }
+                }
                 longPressActive = false; dragPadIndex = null;
-                document.querySelectorAll('.pad.dragging, .pad.drag-over').forEach(p => p.classList.remove('dragging', 'drag-over'));
-                for (const [id, idx] of activeTouches) {
+                return;
+            }
+            for (const touch of e.changedTouches) {
+                if (activeTouches.has(touch.identifier)) {
+                    const idx = activeTouches.get(touch.identifier);
+                    activeTouches.delete(touch.identifier);
                     const pad = document.querySelector('.pad[data-pad="' + idx + '"]');
                     if (pad) pad.classList.remove('active');
                 }
-                activeTouches.clear();
-            });
-
-            document.addEventListener('contextmenu', (e) => e.preventDefault());
-
-            // ============ AUDIO GENERATORS ============
-            function initAudio() {
-                if (audioCtx) return;
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                masterGain = audioCtx.createGain();
-                masterGain.gain.value = volume;
-                masterGain.connect(audioCtx.destination);
-                sampleBuffers = [];
-                sampleBuffers[0] = gK(0.4,150,30,15); sampleBuffers[1] = gK(0.35,120,25,12);
-                sampleBuffers[2] = gS(0.3,180,20,0.5,0.5); sampleBuffers[3] = gS(0.25,200,25,0.4,0.6);
-                sampleBuffers[4] = gH(0.08,60,0.5); sampleBuffers[5] = gH(0.25,10,0.3);
-                sampleBuffers[6] = gT(300,0.35,12); sampleBuffers[7] = gT(200,0.35,12);
-                sampleBuffers[8] = gT(120,0.4,10); sampleBuffers[9] = gC(0.25);
-                sampleBuffers[10] = gR(0.15); sampleBuffers[11] = gSh(0.2);
-                sampleBuffers[12] = gCr(0.8); sampleBuffers[13] = gRd(0.6);
-                sampleBuffers[14] = gP(0.15,800,400); sampleBuffers[15] = gP(0.1,1200,600);
             }
+        });
 
-            function gK(l,fS,fE,d){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){const t=i/sr;data[i]=Math.sin(2*Math.PI*fS*Math.pow(fE/fS,i/len)*t)*Math.exp(-t*d)*0.8+(t<0.005?(1-t/0.005)*0.4:0);}return buf;}
-            function gS(l,f,d,tM,nM){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){data[i]=(Math.sin(2*Math.PI*f*i/sr)*tM+(Math.random()*2-1)*nM)*Math.exp(-i/sr*d)*0.7;}return buf;}
-            function gH(l,d,h){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){let s=(Math.random()*2-1);if(i>0)s-=data[i-1]*h;data[i]=s*Math.exp(-i/sr*d)*0.4;}return buf;}
-            function gT(fB,l,d){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){data[i]=Math.sin(2*Math.PI*fB*Math.pow(0.5,i/len)*i/sr)*Math.exp(-i/sr*d)*0.6;}return buf;}
-            function gC(l){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){const t=i/sr;data[i]=(Math.random()*2-1)*(Math.exp(-t*25)*0.7+(t>0.02&&t<0.04?0.35:0)*Math.exp(-(t-0.03)*40))*0.5;}return buf;}
-            function gR(l){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){data[i]=(Math.sin(2*Math.PI*1000*i/sr)*0.3+(Math.random()*2-1)*0.7)*Math.exp(-i/sr*40)*0.5;}return buf;}
-            function gSh(l){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){data[i]=(Math.random()*2-1)*Math.exp(-i/sr*15)*(0.7+0.3*Math.sin(i/sr*80))*0.35;}return buf;}
-            function gCr(l){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){let s=(Math.random()*2-1);if(i>0)s-=data[i-1]*0.2;data[i]=s*Math.exp(-i/sr*4)*0.5;}return buf;}
-            function gRd(l){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){let s=(Math.random()*2-1);if(i>0)s-=data[i-1]*0.3;data[i]=(Math.sin(2*Math.PI*800*i/sr)*0.4+s*0.6)*Math.exp(-i/sr*6)*0.45;}return buf;}
-            function gP(l,fS,fE){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){data[i]=Math.sin(2*Math.PI*fS*Math.pow(fE/fS,i/len)*i/sr)*Math.exp(-i/sr*30)*0.5;}return buf;}
-
-            function playPad(padIndex, time) {
-                if (!audioCtx) initAudio();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-
-                const sampleIndex = currentLayout[padIndex];
-                const padPitch = currentPitches[padIndex] || 0;
-                const totalPitch = padPitch + globalPitchShift;
-
-                let buffer;
-                if (sampleIndex >= 16) {
-                    buffer = customSamples[sampleIndex - 16]?.buffer;
-                } else {
-                    buffer = sampleBuffers[sampleIndex];
-                }
-                if (!buffer) return;
-
-                const source = audioCtx.createBufferSource();
-                source.buffer = buffer;
-                source.playbackRate.value = Math.pow(2, totalPitch / 12);
-                source.connect(masterGain);
-                source.start(time || 0);
-
-                if (isRecording) {
-                    recordedEvents.push({
-                        padIndex, sampleIndex,
-                        padPitch, globalPitchShift,
-                        time: (time || audioCtx.currentTime) - recordingStartTime
-                    });
-                }
+        document.addEventListener('touchcancel', () => {
+            if (longPressTimer) clearTimeout(longPressTimer);
+            longPressActive = false; dragPadIndex = null;
+            document.querySelectorAll('.pad.dragging, .pad.drag-over').forEach(p => p.classList.remove('dragging', 'drag-over'));
+            for (const [id, idx] of activeTouches) {
+                const pad = document.querySelector('.pad[data-pad="' + idx + '"]');
+                if (pad) pad.classList.remove('active');
             }
+            activeTouches.clear();
+        });
 
-            // ============ RECORDING / PLAYBACK ============
-            function setStatus(m, l) { statusDot.className = 'status-dot ' + m; statusLabel.textContent = l || m.toUpperCase(); }
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-            recordBtn.addEventListener('click', () => {
-                if (editMode || sampleSelectMode) return;
-                if (!audioCtx) initAudio();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-                if (!isRecording) {
-                    isRecording = true; recordedEvents = []; recordingStartTime = audioCtx.currentTime;
-                    recordBtn.classList.add('recording'); recordBtn.textContent = '⏺ REC ●';
-                    playBtn.disabled = false; stopBtn.disabled = true;
-                    setStatus('recording'); if (isPlaying) stopPlayback();
-                } else {
-                    isRecording = false; recordBtn.classList.remove('recording'); recordBtn.textContent = '⏺ REC';
-                    setStatus('ready'); if (!recordedEvents.length) playBtn.disabled = true;
-                }
-            });
+        // ============ AUDIO GENERATORS ============
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = volume;
+            masterGain.connect(audioCtx.destination);
+            sampleBuffers = [];
+            sampleBuffers[0] = gK(0.4,150,30,15); sampleBuffers[1] = gK(0.35,120,25,12);
+            sampleBuffers[2] = gS(0.3,180,20,0.5,0.5); sampleBuffers[3] = gS(0.25,200,25,0.4,0.6);
+            sampleBuffers[4] = gH(0.08,60,0.5); sampleBuffers[5] = gH(0.25,10,0.3);
+            sampleBuffers[6] = gT(300,0.35,12); sampleBuffers[7] = gT(200,0.35,12);
+            sampleBuffers[8] = gT(120,0.4,10); sampleBuffers[9] = gC(0.25);
+            sampleBuffers[10] = gR(0.15); sampleBuffers[11] = gSh(0.2);
+            sampleBuffers[12] = gCr(0.8); sampleBuffers[13] = gRd(0.6);
+            sampleBuffers[14] = gP(0.15,800,400); sampleBuffers[15] = gP(0.1,1200,600);
+        }
 
-            function startPlayback() {
-                if (!recordedEvents.length) return;
-                isPlaying = true; playBtn.disabled = true; stopBtn.disabled = false;
-                recordBtn.disabled = true; clearBtn.disabled = true; setStatus('playing');
-                const now = audioCtx.currentTime;
-                const savedPitches = [...currentPitches];
-                const savedGlobal = globalPitchShift;
-                recordedEvents.forEach(e => {
-                    if (e.padIndex !== undefined) currentPitches[e.padIndex] = e.padPitch || 0;
-                    globalPitchShift = e.globalPitchShift || 0;
-                    if (e.padIndex !== undefined) playPad(e.padIndex, now + e.time);
-                });
-                for (let i = 0; i < 16; i++) currentPitches[i] = savedPitches[i];
-                globalPitchShift = savedGlobal;
-                const last = Math.max(...recordedEvents.map(e => e.time));
-                playbackTimeout = setTimeout(stopPlayback, (last + 0.5) * 1000);
-            }
+        function gK(l,fS,fE,d){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){const t=i/sr;data[i]=Math.sin(2*Math.PI*fS*Math.pow(fE/fS,i/len)*t)*Math.exp(-t*d)*0.8+(t<0.005?(1-t/0.005)*0.4:0);}return buf;}
+        function gS(l,f,d,tM,nM){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){data[i]=(Math.sin(2*Math.PI*f*i/sr)*tM+(Math.random()*2-1)*nM)*Math.exp(-i/sr*d)*0.7;}return buf;}
+        function gH(l,d,h){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){let s=(Math.random()*2-1);if(i>0)s-=data[i-1]*h;data[i]=s*Math.exp(-i/sr*d)*0.4;}return buf;}
+        function gT(fB,l,d){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){data[i]=Math.sin(2*Math.PI*fB*Math.pow(0.5,i/len)*i/sr)*Math.exp(-i/sr*d)*0.6;}return buf;}
+        function gC(l){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){const t=i/sr;data[i]=(Math.random()*2-1)*(Math.exp(-t*25)*0.7+(t>0.02&&t<0.04?0.35:0)*Math.exp(-(t-0.03)*40))*0.5;}return buf;}
+        function gR(l){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){data[i]=(Math.sin(2*Math.PI*1000*i/sr)*0.3+(Math.random()*2-1)*0.7)*Math.exp(-i/sr*40)*0.5;}return buf;}
+        function gSh(l){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){data[i]=(Math.random()*2-1)*Math.exp(-i/sr*15)*(0.7+0.3*Math.sin(i/sr*80))*0.35;}return buf;}
+        function gCr(l){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){let s=(Math.random()*2-1);if(i>0)s-=data[i-1]*0.2;data[i]=s*Math.exp(-i/sr*4)*0.5;}return buf;}
+        function gRd(l){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){let s=(Math.random()*2-1);if(i>0)s-=data[i-1]*0.3;data[i]=(Math.sin(2*Math.PI*800*i/sr)*0.4+s*0.6)*Math.exp(-i/sr*6)*0.45;}return buf;}
+        function gP(l,fS,fE){const sr=audioCtx.sampleRate,len=Math.floor(sr*l),buf=audioCtx.createBuffer(1,len,sr),data=buf.getChannelData(0);for(let i=0;i<len;i++){data[i]=Math.sin(2*Math.PI*fS*Math.pow(fE/fS,i/len)*i/sr)*Math.exp(-i/sr*30)*0.5;}return buf;}
 
-            function stopPlayback() {
-                isPlaying = false; playBtn.disabled = false; stopBtn.disabled = true;
-                recordBtn.disabled = false; clearBtn.disabled = false; setStatus('ready');
-                if (playbackTimeout) { clearTimeout(playbackTimeout); playbackTimeout = null; }
-            }
+        // ============ PLAYBACK (с обрывом предыдущего звука) ============
+        function playPad(padIndex, time) {
+            if (!audioCtx) initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
 
-            playBtn.addEventListener('click', () => {
-                if (editMode || sampleSelectMode) return;
-                if (!audioCtx) initAudio();
-                startPlayback();
-            });
-            stopBtn.addEventListener('click', stopPlayback);
-            clearBtn.addEventListener('click', () => {
-                recordedEvents = []; playBtn.disabled = true; stopBtn.disabled = true;
-                if (isPlaying) stopPlayback(); setStatus('ready');
-            });
-
-            // ============ VOLUME & BPM ============
-            volumeSlider.addEventListener('input', () => {
-                volume = parseInt(volumeSlider.value) / 100; volNum.textContent = volumeSlider.value;
-                if (masterGain) masterGain.gain.setValueAtTime(volume, audioCtx.currentTime);
-            });
-
-            function updateBPM() { bpmValue.textContent = bpm; }
-            let bpmInterval;
-            bpmDown.addEventListener('pointerdown', () => { bpm=Math.max(40,bpm-1);updateBPM();bpmInterval=setInterval(()=>{bpm=Math.max(40,bpm-1);updateBPM();},80); });
-            bpmDown.addEventListener('pointerup', () => clearInterval(bpmInterval));
-            bpmUp.addEventListener('pointerdown', () => { bpm=Math.min(240,bpm+1);updateBPM();bpmInterval=setInterval(()=>{bpm=Math.min(240,bpm+1);updateBPM();},80); });
-            bpmUp.addEventListener('pointerup', () => clearInterval(bpmInterval));
-
-            // ============ BUTTONS ============
-            editBtn.addEventListener('click', () => {
-                if (sampleSelectMode) toggleSampleList();
-                editMode = !editMode; editBtn.classList.toggle('active', editMode);
-                setStatus(editMode ? 'editing' : 'ready', editMode ? 'EDIT' : 'READY'); updatePadsDisplay();
-            });
-            sampleBtn.addEventListener('click', toggleSampleList);
-            globalPitchUpBtn.addEventListener('click', () => shiftGlobalPitch(1));
-            globalPitchDownBtn.addEventListener('click', () => shiftGlobalPitch(-1));
-
-            bankPrev.addEventListener('click', async () => {
-                await loadPreset((currentPreset - 1 + 4) % 4);
-                recordedEvents = []; playBtn.disabled = true; stopBtn.disabled = true;
-                if (isPlaying) stopPlayback();
-                if (isRecording) { isRecording = false; recordBtn.classList.remove('recording'); recordBtn.textContent = '⏺ REC'; }
-                setStatus('ready');
-            });
-
-            bankNext.addEventListener('click', async () => {
-                await loadPreset((currentPreset + 1) % 4);
-                recordedEvents = []; playBtn.disabled = true; stopBtn.disabled = true;
-                if (isPlaying) stopPlayback();
-                if (isRecording) { isRecording = false; recordBtn.classList.remove('recording'); recordBtn.textContent = '⏺ REC'; }
-                setStatus('ready');
-            });
-
-            presetBar.addEventListener('click', async (e) => {
-                const btn = e.target.closest('.preset-btn');
-                if (!btn) return;
-                if (btn === savePresetBtn) {
-                    await saveCurrentPreset();
-                    btn.style.color = '#2ecc71'; setTimeout(() => btn.style.color = '#555', 500);
-                    return;
-                }
-                await loadPreset(parseInt(btn.dataset.preset));
-                recordedEvents = []; playBtn.disabled = true; stopBtn.disabled = true;
-                if (isPlaying) stopPlayback();
-                if (isRecording) { isRecording = false; recordBtn.classList.remove('recording'); recordBtn.textContent = '⏺ REC'; }
-                setStatus('ready');
-            });
-
-            // ============ INIT ============
-            async function init() {
-                await openDB(); initAudio();
-                const savedSamples = await loadAllSamplesFromDB();
-                customSamples = savedSamples;
+            // Останавливаем предыдущий источник этого пэда
+            if (activeSources[padIndex]) {
                 try {
-                    const saved = localStorage.getItem('drummachine_presets');
-                    if (saved) {
-                        const parsed = JSON.parse(saved);
-                        for (let i = 0; i < 4; i++) {
-                            if (parsed[i]) presets[i] = parsed[i];
-                        }
-                    }
-                } catch(e) {}
-                const dbLayouts = await loadAllLayoutsFromDB();
-                for (const key in dbLayouts) {
-                    const idx = parseInt(key);
-                    if (dbLayouts[idx]) {
-                        presets[idx] = {
-                            layout: dbLayouts[idx].layout || [...defaultLayout],
-                            pitches: dbLayouts[idx].pitches || [...defaultPitches]
-                        };
+                    activeSources[padIndex].stop();
+                } catch(e) {
+                    // Уже остановлен — игнорируем
+                }
+                activeSources[padIndex] = null;
+            }
+
+            const sampleIndex = currentLayout[padIndex];
+            const padPitch = currentPitches[padIndex] || 0;
+            const totalPitch = padPitch + globalPitchShift;
+
+            let buffer;
+            if (sampleIndex >= 16) {
+                buffer = customSamples[sampleIndex - 16]?.buffer;
+            } else {
+                buffer = sampleBuffers[sampleIndex];
+            }
+            if (!buffer) return;
+
+            const source = audioCtx.createBufferSource();
+            source.buffer = buffer;
+            source.playbackRate.value = Math.pow(2, totalPitch / 12);
+            source.connect(masterGain);
+            source.start(time || 0);
+
+            // Сохраняем источник
+            activeSources[padIndex] = source;
+
+            // Когда звук закончится сам — удаляем из activeSources
+            source.onended = () => {
+                if (activeSources[padIndex] === source) {
+                    activeSources[padIndex] = null;
+                }
+            };
+
+            if (isRecording) {
+                recordedEvents.push({
+                    padIndex, sampleIndex,
+                    padPitch, globalPitchShift,
+                    time: (time || audioCtx.currentTime) - recordingStartTime
+                });
+            }
+        }
+
+        // ============ RECORDING / PLAYBACK ============
+        function setStatus(m, l) { statusDot.className = 'status-dot ' + m; statusLabel.textContent = l || m.toUpperCase(); }
+
+        recordBtn.addEventListener('click', () => {
+            if (editMode || sampleSelectMode) return;
+            if (!audioCtx) initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            if (!isRecording) {
+                isRecording = true; recordedEvents = []; recordingStartTime = audioCtx.currentTime;
+                recordBtn.classList.add('recording'); recordBtn.textContent = '⏺ REC ●';
+                playBtn.disabled = false; stopBtn.disabled = true;
+                setStatus('recording'); if (isPlaying) stopPlayback();
+            } else {
+                isRecording = false; recordBtn.classList.remove('recording'); recordBtn.textContent = '⏺ REC';
+                setStatus('ready'); if (!recordedEvents.length) playBtn.disabled = true;
+            }
+        });
+
+        function startPlayback() {
+            if (!recordedEvents.length) return;
+            isPlaying = true; playBtn.disabled = true; stopBtn.disabled = false;
+            recordBtn.disabled = true; clearBtn.disabled = true; setStatus('playing');
+            const now = audioCtx.currentTime;
+            const savedPitches = [...currentPitches];
+            const savedGlobal = globalPitchShift;
+            recordedEvents.forEach(e => {
+                if (e.padIndex !== undefined) currentPitches[e.padIndex] = e.padPitch || 0;
+                globalPitchShift = e.globalPitchShift || 0;
+                if (e.padIndex !== undefined) playPad(e.padIndex, now + e.time);
+            });
+            for (let i = 0; i < 16; i++) currentPitches[i] = savedPitches[i];
+            globalPitchShift = savedGlobal;
+            const last = Math.max(...recordedEvents.map(e => e.time));
+            playbackTimeout = setTimeout(stopPlayback, (last + 0.5) * 1000);
+        }
+
+        function stopPlayback() {
+            isPlaying = false; playBtn.disabled = false; stopBtn.disabled = true;
+            recordBtn.disabled = false; clearBtn.disabled = false; setStatus('ready');
+            if (playbackTimeout) { clearTimeout(playbackTimeout); playbackTimeout = null; }
+            
+            // Останавливаем все играющие звуки
+            for (const key in activeSources) {
+                if (activeSources[key]) {
+                    try { activeSources[key].stop(); } catch(e) {}
+                    activeSources[key] = null;
+                }
+            }
+        }
+
+        playBtn.addEventListener('click', () => {
+            if (editMode || sampleSelectMode) return;
+            if (!audioCtx) initAudio();
+            startPlayback();
+        });
+        stopBtn.addEventListener('click', stopPlayback);
+        clearBtn.addEventListener('click', () => {
+            recordedEvents = []; playBtn.disabled = true; stopBtn.disabled = true;
+            if (isPlaying) stopPlayback(); setStatus('ready');
+        });
+
+        // ============ VOLUME & BPM ============
+        volumeSlider.addEventListener('input', () => {
+            volume = parseInt(volumeSlider.value) / 100; volNum.textContent = volumeSlider.value;
+            if (masterGain) masterGain.gain.setValueAtTime(volume, audioCtx.currentTime);
+        });
+
+        function updateBPM() { bpmValue.textContent = bpm; }
+        let bpmInterval;
+        bpmDown.addEventListener('pointerdown', () => { bpm=Math.max(40,bpm-1);updateBPM();bpmInterval=setInterval(()=>{bpm=Math.max(40,bpm-1);updateBPM();},80); });
+        bpmDown.addEventListener('pointerup', () => clearInterval(bpmInterval));
+        bpmUp.addEventListener('pointerdown', () => { bpm=Math.min(240,bpm+1);updateBPM();bpmInterval=setInterval(()=>{bpm=Math.min(240,bpm+1);updateBPM();},80); });
+        bpmUp.addEventListener('pointerup', () => clearInterval(bpmInterval));
+
+        // ============ BUTTONS ============
+        editBtn.addEventListener('click', () => {
+            if (sampleSelectMode) toggleSampleList();
+            editMode = !editMode; editBtn.classList.toggle('active', editMode);
+            setStatus(editMode ? 'editing' : 'ready', editMode ? 'EDIT' : 'READY'); updatePadsDisplay();
+        });
+        sampleBtn.addEventListener('click', toggleSampleList);
+        globalPitchUpBtn.addEventListener('click', () => shiftGlobalPitch(1));
+        globalPitchDownBtn.addEventListener('click', () => shiftGlobalPitch(-1));
+
+        bankPrev.addEventListener('click', async () => {
+            await loadPreset((currentPreset - 1 + 4) % 4);
+            recordedEvents = []; playBtn.disabled = true; stopBtn.disabled = true;
+            if (isPlaying) stopPlayback();
+            if (isRecording) { isRecording = false; recordBtn.classList.remove('recording'); recordBtn.textContent = '⏺ REC'; }
+            setStatus('ready');
+        });
+
+        bankNext.addEventListener('click', async () => {
+            await loadPreset((currentPreset + 1) % 4);
+            recordedEvents = []; playBtn.disabled = true; stopBtn.disabled = true;
+            if (isPlaying) stopPlayback();
+            if (isRecording) { isRecording = false; recordBtn.classList.remove('recording'); recordBtn.textContent = '⏺ REC'; }
+            setStatus('ready');
+        });
+
+        presetBar.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.preset-btn');
+            if (!btn) return;
+            if (btn === savePresetBtn) {
+                await saveCurrentPreset();
+                btn.style.color = '#2ecc71'; setTimeout(() => btn.style.color = '#555', 500);
+                return;
+            }
+            await loadPreset(parseInt(btn.dataset.preset));
+            recordedEvents = []; playBtn.disabled = true; stopBtn.disabled = true;
+            if (isPlaying) stopPlayback();
+            if (isRecording) { isRecording = false; recordBtn.classList.remove('recording'); recordBtn.textContent = '⏺ REC'; }
+            setStatus('ready');
+        });
+
+        // ============ INIT ============
+        async function init() {
+            await openDB(); initAudio();
+            const savedSamples = await loadAllSamplesFromDB();
+            customSamples = savedSamples;
+            try {
+                const saved = localStorage.getItem('drummachine_presets');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    for (let i = 0; i < 4; i++) {
+                        if (parsed[i]) presets[i] = parsed[i];
                     }
                 }
-                currentLayout = [...presets[0].layout];
-                currentPitches = [...presets[0].pitches];
-                buildSampleList(); updatePadsDisplay(); updateBPM(); updatePresetButtons(); setStatus('ready');
-                console.log('🥁 Drum Machine ready! ' + customSamples.length + ' custom samples loaded.');
+            } catch(e) {}
+            const dbLayouts = await loadAllLayoutsFromDB();
+            for (const key in dbLayouts) {
+                const idx = parseInt(key);
+                if (dbLayouts[idx]) {
+                    presets[idx] = {
+                        layout: dbLayouts[idx].layout || [...defaultLayout],
+                        pitches: dbLayouts[idx].pitches || [...defaultPitches]
+                    };
+                }
             }
-            init();
-            document.addEventListener('touchstart', () => { if (!audioCtx) initAudio(); }, { once: true });
-        })();
-    </script>
-</body>
-</html>
+            currentLayout = [...presets[0].layout];
+            currentPitches = [...presets[0].pitches];
+            buildSampleList(); updatePadsDisplay(); updateBPM(); updatePresetButtons(); setStatus('ready');
+            console.log('🥁 Drum Machine ready! ' + customSamples.length + ' custom samples loaded.');
+        }
+        init();
+        document.addEventListener('touchstart', () => { if (!audioCtx) initAudio(); }, { once: true });
+    })();
+</script>
