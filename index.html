@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover, maximum-scale=1.0, minimum-scale=1.0">
-    <title>BeatBox 64 Pro</title>
+    <title>Drum Machine</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
@@ -317,7 +317,6 @@
             border-color: rgba(0, 200, 255, 0.4) !important;
         }
 
-        /* Список семплов */
         .sample-list-container {
             display: none;
             background: #1a1a1a;
@@ -617,10 +616,6 @@
             color: #555;
             text-transform: uppercase;
         }
-
-        .hidden-file-input {
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -665,11 +660,11 @@
             </div>
             <div class="sample-list" id="sampleList"></div>
             <div class="sample-actions">
-                <button class="sample-action-btn upload-btn" id="uploadSampleBtn">📁 ЗАГРУЗИТЬ</button>
+                <label for="fileInput" class="sample-action-btn upload-btn" style="cursor:pointer;text-align:center;display:flex;justify-content:center;align-items:center;">📁 ЗАГРУЗИТЬ</label>
+                <input type="file" id="fileInput" multiple style="position:absolute;opacity:0;width:0;height:0;overflow:hidden;">
                 <button class="sample-action-btn assign-btn" id="assignSampleBtn">✓ НАЗНАЧИТЬ</button>
                 <button class="sample-action-btn delete-btn" id="deleteSampleBtn">🗑</button>
             </div>
-            <input type="file" class="hidden-file-input" id="fileInput" accept="audio/*" multiple>
         </div>
 
         <div class="pads-grid" id="padsGrid">
@@ -721,7 +716,7 @@
             tg.expand();
 
             // ============ INDEXEDDB ============
-            const DB_NAME = 'BeatBox64DBv3';
+            const DB_NAME = 'DrumMachineDB';
             const DB_VERSION = 1;
             let db = null;
 
@@ -864,7 +859,6 @@
             const sampleListContainer = document.getElementById('sampleListContainer');
             const sampleListEl = document.getElementById('sampleList');
             const sampleSearch = document.getElementById('sampleSearch');
-            const uploadSampleBtn = document.getElementById('uploadSampleBtn');
             const assignSampleBtn = document.getElementById('assignSampleBtn');
             const deleteSampleBtn = document.getElementById('deleteSampleBtn');
             const fileInput = document.getElementById('fileInput');
@@ -875,7 +869,6 @@
             const bankNext = document.getElementById('bankNext');
             const globalPitchUpBtn = document.getElementById('globalPitchUpBtn');
             const globalPitchDownBtn = document.getElementById('globalPitchDownBtn');
-            const padPitchControl = document.getElementById('padPitchControl');
             const padPitchValue = document.getElementById('padPitchValue');
             const padPitchUp = document.getElementById('padPitchUp');
             const padPitchDown = document.getElementById('padPitchDown');
@@ -905,7 +898,7 @@
 
             async function saveCurrentPreset() {
                 presets[currentPreset] = { layout: [...currentLayout], pitches: [...currentPitches] };
-                localStorage.setItem('beatbox64_presets_v3', JSON.stringify(presets));
+                localStorage.setItem('drummachine_presets', JSON.stringify(presets));
                 await saveLayoutToDB(currentPreset, currentLayout, currentPitches);
             }
 
@@ -927,11 +920,8 @@
                 const pos = parseInt(pad.dataset.pad);
                 const si = currentLayout[pos];
                 const pitch = currentPitches[pos];
-
-                // Сохраняем класс active если он был
                 const wasActive = pad.classList.contains('active');
 
-                // Очищаем все кроме базовых
                 pad.className = 'pad';
                 pad.classList.add(getPadClass(si));
                 if (si >= 16) pad.classList.add('custom-sample');
@@ -1037,21 +1027,39 @@
                 }
             }
 
-            // ============ FILE UPLOAD ============
-            uploadSampleBtn.addEventListener('click', () => fileInput.click());
+            // ============ FILE UPLOAD (без accept для совместимости с Telegram WebView) ============
             fileInput.addEventListener('change', async (e) => {
                 const files = Array.from(e.target.files);
                 if (!files.length) return;
                 if (!audioCtx) initAudio();
+                
+                const audioExtensions = ['wav', 'mp3', 'ogg', 'm4a', 'aac', 'flac', 'aiff', 'wma', 'opus'];
+                
                 for (const file of files) {
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    const isAudio = audioExtensions.includes(ext) || file.type.startsWith('audio/');
+                    
+                    if (!isAudio) {
+                        alert('Пропущен (не аудио): ' + file.name);
+                        continue;
+                    }
+                    
                     try {
-                        const buf = await audioCtx.decodeAudioData(await file.arrayBuffer());
+                        const arrayBuffer = await file.arrayBuffer();
+                        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
                         const name = file.name.replace(/\.[^/.]+$/, '').substring(0, 15).toUpperCase();
-                        const dbId = await saveSampleToDB(name, buf);
-                        customSamples.push({ id: dbId, name, buffer: buf });
-                    } catch(err) { alert('Ошибка: ' + file.name); }
+                        const dbId = await saveSampleToDB(name, audioBuffer);
+                        customSamples.push({ id: dbId, name, buffer: audioBuffer });
+                    } catch(err) {
+                        console.error('Failed to load sample:', file.name, err);
+                        alert('Ошибка загрузки: ' + file.name + '\n' + err.message);
+                    }
                 }
-                buildSampleList(); renderSampleList(sampleSearch.value); updatePadsDisplay(); saveCurrentPreset();
+                
+                buildSampleList(); 
+                renderSampleList(sampleSearch.value); 
+                updatePadsDisplay(); 
+                saveCurrentPreset();
                 fileInput.value = '';
             });
 
@@ -1176,7 +1184,7 @@
 
             document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-            // ============ AUDIO ============
+            // ============ AUDIO GENERATORS ============
             function initAudio() {
                 if (audioCtx) return;
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1262,13 +1270,9 @@
                 const savedPitches = [...currentPitches];
                 const savedGlobal = globalPitchShift;
                 recordedEvents.forEach(e => {
-                    if (e.padIndex !== undefined) {
-                        currentPitches[e.padIndex] = e.padPitch || 0;
-                    }
+                    if (e.padIndex !== undefined) currentPitches[e.padIndex] = e.padPitch || 0;
                     globalPitchShift = e.globalPitchShift || 0;
-                    if (e.padIndex !== undefined) {
-                        playPad(e.padIndex, now + e.time);
-                    }
+                    if (e.padIndex !== undefined) playPad(e.padIndex, now + e.time);
                 });
                 for (let i = 0; i < 16; i++) currentPitches[i] = savedPitches[i];
                 globalPitchShift = savedGlobal;
@@ -1353,7 +1357,7 @@
                 const savedSamples = await loadAllSamplesFromDB();
                 customSamples = savedSamples;
                 try {
-                    const saved = localStorage.getItem('beatbox64_presets_v3');
+                    const saved = localStorage.getItem('drummachine_presets');
                     if (saved) {
                         const parsed = JSON.parse(saved);
                         for (let i = 0; i < 4; i++) {
@@ -1374,7 +1378,7 @@
                 currentLayout = [...presets[0].layout];
                 currentPitches = [...presets[0].pitches];
                 buildSampleList(); updatePadsDisplay(); updateBPM(); updatePresetButtons(); setStatus('ready');
-                console.log('🥁 BeatBox 64 ready! Individual pad pitch, ' + customSamples.length + ' samples.');
+                console.log('🥁 Drum Machine ready! ' + customSamples.length + ' custom samples loaded.');
             }
             init();
             document.addEventListener('touchstart', () => { if (!audioCtx) initAudio(); }, { once: true });
